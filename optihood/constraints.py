@@ -86,6 +86,10 @@ def environmentalImpactlimit(om, keyword1, keyword2, limit=None):
 
     envImpact = "totalEnvironmentalImpact"
 
+    #print('===='*10)
+    #for (inflow, outflow) in flows:
+    #    print('Flow', inflow, outflow, flows[inflow, outflow])
+    #    print('T', getattr(flows[inflow, outflow], keyword1))
     setattr(
         om,
         envImpact,

@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import os
 try:
@@ -26,6 +27,8 @@ if __name__ == '__main__':
                "2018-08-18": 26,
                "2018-05-28": 23,
                "2018-02-06": 48}
+    print(np.sum(np.array(list(cluster.values())).astype(int)))
+    #cluster = None
 
     # set a time period for the optimization problem according to the size of clusers
     timePeriod = pd.date_range("2018-01-01 00:00:00", "2018-01-12 23:00:00", freq="60min")
@@ -35,10 +38,10 @@ if __name__ == '__main__':
     inputfileName = "scenario.xls"
 
     resultFilePath =r"..\results"
-    resultFileName ="results.xlsx"
+    resultFileName ="results_yes.xlsx"
 
     # initialize parameters
-    numberOfBuildings = 4
+    numberOfBuildings = 1
     optimizationType = "costs"  # set as "env" for environmental optimization
 
     # create an energy network and set the network parameters from an excel file

@@ -124,7 +124,7 @@ class EnergyNetworkClass(solph.EnergySystem):
             # set datetime index
             for i in range(numBuildings):
                 nodesData["demandProfiles"][i + 1].set_index("timestamp", inplace=True)
-                nodesData["demandProfiles"][i + 1].index = pd.to_datetime(nodesData["demandProfiles"][i + 1].index)
+                nodesData["demandProfiles"][i + 1].index = pd.to_datetime(nodesData["demandProfiles"][i + 1].index)#, format="%m.%d.%Y %H:%M")
 
         if type(electricityImpact) == np.float64:
             # for constant impact
@@ -140,7 +140,9 @@ class EnergyNetworkClass(solph.EnergySystem):
             nodesData["electricity_impact"] = pd.read_csv(electricityImpact, delimiter=";")
             # set datetime index
             nodesData["electricity_impact"].set_index("timestamp", inplace=True)
-            nodesData["electricity_impact"].index = pd.to_datetime(nodesData["electricity_impact"].index)
+            #nodesData["electricity_impact"].index = pd.to_datetime(nodesData["electricity_impact"].index)
+            # TODO ma bouillie
+            nodesData["electricity_impact"].index = pd.date_range(start=nodesData['electricity_impact'].index[0], freq='H', periods=nodesData['electricity_impact'].shape[0])
 
         if type(electricityCost) == np.float64:
             # for constant cost
