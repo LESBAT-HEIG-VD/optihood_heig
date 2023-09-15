@@ -78,8 +78,30 @@ class EnergyNetworkClass(solph.EnergySystem):
             nodesData["electricity_impact"] = electricityImpact
             nodesData["electricity_cost"] = electricityCost
             nodesData["weather_data"] = weatherData
+        # print('-'*50)
+        # print('New node data demandProfiles', nodesData['demandProfiles'][1].index)
+        # print('New node data electricity_impact', nodesData['electricity_impact'].index)
+        # print('New node data electricity_cost', nodesData['electricity_cost'].index)
+        # print('New node data weather', nodesData['weather_data'].index)
+        # print('New node data demandProfiles', nodesData['demandProfiles'][1].columns)
+        # print('New node data electricity_impact', nodesData['electricity_impact'].columns)
+        # print('New node data electricity_cost', nodesData['electricity_cost'].columns)
+        # print('New node data weather', nodesData['weather_data'].columns)
+        # print('-'*50)
+        #nan
+        # if '2021-12-26' in nodesData['weather_data'].index:
+        #     print('From excel 2_28', nodesData['weather_data'].loc['2021-12-26'])
+        # else:
+        #     print('No 2021-12-26')
+        # if '2021-12-27' in nodesData['weather_data'].index:
+        #     print('From excel 2_29', nodesData['weather_data'].loc['2021-12-27'])
+        # else:
+        #     print('No 2021-12-27')
+        # print('From excel 2', nodesData['weather_data'])
 
-        self._convertNodes(nodesData, opt, mergeLinkBuses)
+
+        n_days = len(clusterSize.keys()) if clusterSize else 365
+        self._convertNodes(nodesData, opt, mergeLinkBuses, n_days=n_days)
         logging.info("Nodes from Excel file {} successfully converted".format(filePath))
         self.add(*self._nodesList)
         logging.info("Nodes successfully added to the energy network")
@@ -182,7 +204,7 @@ class EnergyNetworkClass(solph.EnergySystem):
         logging.info("Data from Excel file {} imported.".format(filePath))
         return nodesData
 
-    def _convertNodes(self, data, opt, mergeLinkBuses):
+    def _convertNodes(self, data, opt, mergeLinkBuses, n_days=365):
         if not data:
             logging.error("Nodes data is missing.")
         ################## !!!
@@ -204,11 +226,11 @@ class EnergyNetworkClass(solph.EnergySystem):
         # Storage conversion L - kWh to display the L value
         self.__Lsh = 4.186 * (self.__temperatureSH - data["stratified_storage"].loc["shStorage", "temp_c"]) / 3600
         self.__Ldhw = 4.186 * (self.__temperatureDHW - data["stratified_storage"].loc["dhwStorage", "temp_c"]) / 3600
-        self._addBuildings(data, opt, mergeLinkBuses)
+        self._addBuildings(data, opt, mergeLinkBuses, n_days=n_days)
 
-    def _addBuildings(self, data, opt, mergeLinkBuses):
+    def _addBuildings(self, data, opt, mergeLinkBuses, n_days=365):
         numberOfBuildings = max(data["buses"]["building"])
-        self.__buildings = [Building('Building' + str(i + 1)) for i in range(numberOfBuildings)]
+        self.__buildings = [Building('Building' + str(i + 1), n_days=n_days) for i in range(numberOfBuildings)]
         for b in self.__buildings:
             buildingLabel = b.getBuildingLabel()
             i = int(buildingLabel[8:])
@@ -448,14 +470,16 @@ class EnergyNetworkClass(solph.EnergySystem):
             capacityStorages = self.__capacitiesStoragesBuilding[buildingLabel]
             technologies = self.__technologies[buildingLabel]
             inputs = self.__inputs[buildingLabel]
+            n_days = b.getNdays()
 
             # CAPital investment EXpenditure
-            self.__capex[buildingLabel] = sum((self.__costParam[i][1] * (capacityTransformers[(i, o)] > 1))             # base investment cost if the technology is implemented
+            transformersCosts =sum((self.__costParam[i][1] * (capacityTransformers[(i, o)] > 1))             # base investment cost if the technology is implemented
                                               + (capacityTransformers[(i, o)] * self.__costParam[i][0])                 # investment cost per unit capacity
-                                              for i, o in capacityTransformers) + \
-                                          sum((self.__costParam[x][1] * (capacityStorages[x] > 1))                      # base investment cost if the technology is implemented
+                                              for i, o in capacityTransformers)
+            costsStorages = sum((self.__costParam[x][1] * (capacityStorages[x] > 1))                      # base investment cost if the technology is implemented
                                               + (capacityStorages[x] * self.__costParam[x][0])                          # investment cost per unit capacity
                                               for x in capacityStorages)
+            self.__capex[buildingLabel] = (transformersCosts + costsStorages) * 365. / n_days
 
             electricitySourceLabel = "electricityResource" + '__' + buildingLabel
             gridBusLabel = "gridBus" + '__' + buildingLabel
@@ -1063,7 +1087,8 @@ class EnergyNetworkGroup(EnergyNetworkClass):
             nodesData["weather_data"] = weatherData
 
         nodesData["links"]= data.parse("links")
-        self._convertNodes(nodesData, opt, mergeLinkBuses)
+        n_days = len(clusterSize.keys()) if clusterSize else 365
+        self._convertNodes(nodesData, opt, mergeLinkBuses, n_days=n_days)
         self._addLinks(nodesData["links"], numberOfBuildings, mergeLinkBuses)
         logging.info("Nodes from Excel file {} successfully converted".format(filePath))
         self.add(*self._nodesList)
