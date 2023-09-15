@@ -10,8 +10,9 @@ from optihood.sinks import SinkRCModel
 
 intRate = 0.05
 
+
 class Building:
-    def __init__(self, label):
+    def __init__(self, label, n_days=365):
         self.__nodesList = []
         self.__inputs = []
         self.__technologies = []
@@ -19,7 +20,9 @@ class Building:
         self.__envParam = {}
         self.__busDict = {}
         self.__buildingLabel = label
-        self.__linkBuses = ["electricityBus", "electricityInBus", "domesticHotWaterBus", "dhwDemandBus", "spaceHeatingBus", "shDemandBus"]
+        self.__linkBuses = ["electricityBus", "electricityInBus", "domesticHotWaterBus", "dhwDemandBus",
+                            "spaceHeatingBus", "shDemandBus"]
+        self.__n_days = n_days  # number of days in the optimization period
 
     def getBuildingLabel(self):
         return self.__buildingLabel
@@ -41,6 +44,9 @@ class Building:
 
     def getEnvParam(self):
         return self.__envParam
+
+    def getNdays(self):
+        return self.__n_days
 
     def addBus(self, data, opt, mergeLinkBuses):
         # Create Bus objects from buses table
@@ -77,8 +83,7 @@ class Building:
         # Create Source objects from table 'commodity sources'
         for i, s in data.iterrows():
             if opt == "costs":
-                epc=self._calculateInvest(s)[0]
-                base=self._calculateInvest(s)[1]
+                epc, base = self._calculateInvest(s)
                 env_capa=float(s["impact_cap"]) / float(s["lifetime"])
                 env_flow=float(s["elec_impact"])
                 varc=0 # variable cost is only passed for environmental optimization if there are emissions per kWh of energy produced from the unit
@@ -128,8 +133,7 @@ class Building:
                 inputBusLabel = s["from"] + '__' + self.__buildingLabel
 
             if opt == "costs":
-                epc=self._calculateInvest(s)[0]
-                base=self._calculateInvest(s)[1]
+                epc, base = self._calculateInvest(s)
                 env_capa=float(s["impact_cap"]) / float(s["lifetime"])
                 env_flow=float(s["heat_impact"])
                 varc=0 # variable cost is only passed for environmental optimization if there are emissions per kWh of energy produced from the unit
@@ -557,4 +561,7 @@ class Building:
         m = data["maintenance"]
         perCapacity = m * data["invest_cap"] + economics.annuity(c * data["invest_cap"], data["lifetime"], intRate)
         base = m * data["invest_base"] + economics.annuity(c * data["invest_base"], data["lifetime"], intRate)
+        div = self.__n_days / 365.  # Scale the invest price according to the number of days in the optimization period
+        perCapacity = perCapacity * div
+        base = base * div
         return perCapacity, base
