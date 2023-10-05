@@ -77,8 +77,7 @@ class Building:
         # Create Source objects from table 'commodity sources'
         for i, s in data.iterrows():
             if opt == "costs":
-                epc=self._calculateInvest(s)[0]
-                base=self._calculateInvest(s)[1]
+                epc, base = self._calculateInvest(s)
                 env_capa=float(s["impact_cap"]) / float(s["lifetime"])
                 env_flow=float(s["elec_impact"])
                 varc=0 # variable cost is only passed for environmental optimization if there are emissions per kWh of energy produced from the unit
@@ -128,8 +127,7 @@ class Building:
                 inputBusLabel = s["from"] + '__' + self.__buildingLabel
 
             if opt == "costs":
-                epc=self._calculateInvest(s)[0]
-                base=self._calculateInvest(s)[1]
+                epc, base = self._calculateInvest(s)
                 env_capa=float(s["impact_cap"]) / float(s["lifetime"])
                 env_flow=float(s["heat_impact"])
                 varc=0 # variable cost is only passed for environmental optimization if there are emissions per kWh of energy produced from the unit

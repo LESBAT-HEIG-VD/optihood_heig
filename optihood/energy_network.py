@@ -124,7 +124,7 @@ class EnergyNetworkClass(solph.EnergySystem):
             # set datetime index
             for i in range(numBuildings):
                 nodesData["demandProfiles"][i + 1].set_index("timestamp", inplace=True)
-                nodesData["demandProfiles"][i + 1].index = pd.to_datetime(nodesData["demandProfiles"][i + 1].index)#, format="%m.%d.%Y %H:%M")
+                nodesData["demandProfiles"][i + 1].index = pd.to_datetime(nodesData["demandProfiles"][i + 1].index, format="%d.%m.%Y %H:%M")
 
         if type(electricityImpact) == np.float64:
             # for constant impact
@@ -141,7 +141,7 @@ class EnergyNetworkClass(solph.EnergySystem):
             # set datetime index
             nodesData["electricity_impact"].set_index("timestamp", inplace=True)
             #nodesData["electricity_impact"].index = pd.to_datetime(nodesData["electricity_impact"].index)
-            # TODO ma bouillie
+            # fixing the date index for the gwp from EcoDynElec
             nodesData["electricity_impact"].index = pd.date_range(start=nodesData['electricity_impact'].index[0], freq='H', periods=nodesData['electricity_impact'].shape[0])
 
         if type(electricityCost) == np.float64:
@@ -251,7 +251,7 @@ class EnergyNetworkClass(solph.EnergySystem):
     def optimize(self, numberOfBuildings, solver, envImpactlimit=1000000, clusterSize={},
                  options=None,   # solver options
                  optConstraints=None, #optional constraints (implemented for the moment are "roof area"
-                 mergeLinkBuses=False):
+                 mergeLinkBuses=False, clusterContraint=True): # apply 2-days storage limit when using clusters, or not (for testing)
 
         if options is None:
             options = {"gurobi": {"MIPGap": 0.01}}
@@ -284,7 +284,8 @@ class EnergyNetworkClass(solph.EnergySystem):
         if not np.isnan(self.__elRodEff):
             optimizationModel = electricRodCapacityConstaint(optimizationModel, numberOfBuildings)
 
-        if clusterSize:
+        if clusterSize and clusterContraint:
+            print('...Adding cluster constraint...')
             optimizationModel = dailySHStorageConstraint(optimizationModel)
 
         logging.info("Custom constraints successfully added to the optimization model")
