@@ -1,6 +1,8 @@
 from pyomo import environ as pyo
-from oemof.solph.plumbing import sequence
+from optihood._helpers import *
+from oemof.solph._plumbing import sequence
 from math import pi
+from oemof.solph.constraints.flow_count_limit import limit_active_flow_count
 
 def dailySHStorageConstraint(om):
     """
@@ -18,6 +20,41 @@ def dailySHStorageConstraint(om):
                         constr + str(t),
                         pyo.Constraint(expr=(om.GenericInvestmentStorageBlock.storage_content[s, t] == 0)),
                     )
+
+    return om
+
+def multiTemperatureStorageCapacityConstaint(om, storageNodes, optType):
+    """Constraint on thermal storage capacity when multiple temperature levels exist"""
+    storageCapacityDict = {}
+    storageMaxCapacity = {}
+    storageMinCapacity = {}
+    #storageBaseInvestment = {}
+    for x in om.GenericInvestmentStorageBlock.INVESTSTORAGES:
+        if "thermalStorage" in x.label:
+            if x.label.split("__")[1] not in storageCapacityDict:
+                storageCapacityDict[x.label.split("__")[1]] = [x]
+                storageMaxCapacity[x.label.split("__")[1]] = [s.capacityMax for s in storageNodes if x.label.split("__")[1] in s.label][0]
+                storageMinCapacity[x.label.split("__")[1]] = [s.capacityMin for s in storageNodes if x.label.split("__")[1] in s.label][0]
+                #storageBaseInvestment[x.label.split("__")[1]] = [s.baseInvestment for s in storageNodes if x.label.split("__")[1] in s.label][0]
+            else:
+                storageCapacityDict[x.label.split("__")[1]].append(x)
+
+    for building in storageCapacityDict:
+        storageCapacity =sum(om.GenericInvestmentStorageBlock.invest[x] for x in storageCapacityDict[building])
+        setattr(
+            om,
+             "ThermalStorage_maxConstraint" + building[8:],
+            pyo.Constraint(expr=(storageCapacity <= storageMaxCapacity[building])),
+        )
+        setattr(
+            om,
+            "ThermalStorage_minConstraint" + building[8:],
+            pyo.Constraint(expr=(storageCapacity >= storageMinCapacity[building])),
+        )
+        # if storage is selected then add offset to objective function
+        """if optType == "costs":
+            offsetThermalStorage = storageBaseInvestment[building]*storageCapacity         #*(storageCapacity>0.001)
+            om.objective += offsetThermalStorage"""
 
     return om
 
@@ -61,7 +98,7 @@ def connectInvestmentRule(om):
     return om
 
 
-def environmentalImpactlimit(om, keyword1, keyword2, limit=None):
+def environmentalImpactlimit(om, keyword1, keyword2,limit=None,clusterSZ={}):
     """
     Based on: oemof.solph.constraints.emission_limit
     Function to limit the environmental impacts during the multi-objective optimization
@@ -72,41 +109,58 @@ def environmentalImpactlimit(om, keyword1, keyword2, limit=None):
     :return:
     """
     flows = {}
-    transformerFlowCapacityDict = {}
+    transformerFlowCapacityDictNonConvex = {}
+    transformerFlowCapacityDictConvex = {}
     storageCapacityDict = {}
     for (i, o) in om.flows:
         if hasattr(om.flows[i, o], keyword1):
             flows[(i, o)] = om.flows[i, o]
         if hasattr(om.flows[i, o].investment, keyword2):
-            transformerFlowCapacityDict[(i, o)] = om.flows[i, o].investment
+            if om.flows[i, o].nonconvex is not None:
+                transformerFlowCapacityDictNonConvex[(i, o)] = om.flows[i, o].investment
+            else:
+                transformerFlowCapacityDictConvex[(i, o)] = om.flows[i, o].investment
 
-    for x in om.GenericInvestmentStorageBlock.INVESTSTORAGES:
-        if hasattr(x.investment, keyword2):
-            storageCapacityDict[x] = om.GenericInvestmentStorageBlock.invest[x]
+    if hasattr(om, 'GenericInvestmentStorageBlock'):
+        for x in om.GenericInvestmentStorageBlock.INVESTSTORAGES:
+            if hasattr(x.investment, keyword2):
+                storageCapacityDict[x] = om.GenericInvestmentStorageBlock.invest[x]
 
     envImpact = "totalEnvironmentalImpact"
+    cluster_vector=[]
+    if clusterSZ!={}:        
+        for d in clusterSZ:
+            for i in range(24):
+                cluster_vector.append({}) 
+                cluster_vector[-1]=clusterSZ[d]
+    else:
+        for t in om.TIMESTEPS:
+            cluster_vector.append({}) 
+            cluster_vector[-1]=1
 
-    #print('===='*10)
-    #for (inflow, outflow) in flows:
-    #    print('Flow', inflow, outflow, flows[inflow, outflow])
-    #    print('T', getattr(flows[inflow, outflow], keyword1))
     setattr(
         om,
         envImpact,
         pyo.Expression(
             expr=sum(
-            # Environmental inpact of input flows
+                # Environmental inpact of input flows
                 om.flow[inflow, outflow, t]
                 * om.timeincrement[t]
                 * sequence(getattr(flows[inflow, outflow], keyword1))[t]
+                * cluster_vector[t]
                 for (inflow, outflow) in flows
                 for t in om.TIMESTEPS
             )
-            # fix Environmental impact per transformer capacity
-            + sum(om.InvestmentFlow.invest[inflow, outflow] * getattr(transformerFlowCapacityDict[inflow, outflow], keyword2)
-            for (inflow, outflow) in transformerFlowCapacityDict)
-            # fix Environmental impact per storage capacity
-            + sum(om.GenericInvestmentStorageBlock.invest[x] * getattr(x.investment, keyword2) for x in storageCapacityDict)
+                 # fix Environmental impact per transformer capacity from convex and nonconvex flows
+                 + sum(om.InvestmentFlowBlock.invest[inflow, outflow] * getattr(
+                transformerFlowCapacityDictConvex[inflow, outflow], keyword2)
+                       for (inflow, outflow) in transformerFlowCapacityDictConvex)
+                 + sum(om.InvestNonConvexFlowBlock.invest[inflow, outflow] * getattr(
+                transformerFlowCapacityDictNonConvex[inflow, outflow], keyword2)
+                       for (inflow, outflow) in transformerFlowCapacityDictNonConvex)
+                 # fix Environmental impact per storage capacity
+                 + sum(om.GenericInvestmentStorageBlock.invest[x] * getattr(x.investment, keyword2) for x in
+                       storageCapacityDict)
         ),
     )
     setattr(
@@ -114,10 +168,13 @@ def environmentalImpactlimit(om, keyword1, keyword2, limit=None):
         envImpact + "_constraint",
         pyo.Constraint(expr=(getattr(om, envImpact) <= limit)),
     )
-    return om, flows, transformerFlowCapacityDict, storageCapacityDict
+
+    transformerFlowCapacityDictNonConvex.update(transformerFlowCapacityDictConvex)
+
+    return om, flows, transformerFlowCapacityDictNonConvex, storageCapacityDict
 
 
-def roof_area_limit(model, keyword1, keyword2, nb):
+def roof_area_limit(om, keyword1, keyword2, nb):
     r"""
     Based on: oemof.solph.constraints.additional_investment_flow_limit
     Constraint to limit the capacity of solar panels installed considering the roof area available
@@ -141,20 +198,20 @@ def roof_area_limit(model, keyword1, keyword2, nb):
     for b in range(1, nb+1):
         limit = 0
         invest_flows = {}
-        for (i, o) in model.flows:
-            if str(b) in str(i):
-                if hasattr(model.flows[i, o].investment, keyword1):
-                    invest_flows[(i, o)] = model.flows[i, o].investment
-                    limit = getattr(model.flows[i, o].investment, keyword2)
+        for (i, o) in om.flows:
+            if "Building" + str(b) in str(i):
+                if hasattr(om.flows[i, o].investment, keyword1):
+                    invest_flows[(i, o)] = om.flows[i, o].investment
+                    limit = getattr(om.flows[i, o].investment, keyword2)
 
         limit_name = "invest_limit_" + keyword1 + "_building" + str(b)
 
         setattr(
-            model,
+            om,
             limit_name,
             pyo.Expression(
                 expr=sum(
-                    model.InvestmentFlow.invest[inflow, outflow]
+                    om.InvestmentFlowBlock.invest[inflow, outflow]
                     * getattr(invest_flows[inflow, outflow], keyword1)
                     for (inflow, outflow) in invest_flows
                 )
@@ -162,13 +219,13 @@ def roof_area_limit(model, keyword1, keyword2, nb):
         )
 
         setattr(
-            model,
+            om,
             limit_name + "_constraint",
-            pyo.Constraint(expr=(getattr(model, limit_name) <= limit)),
+            pyo.Constraint(expr=(getattr(om, limit_name) <= limit)),
         )
 
 
-    return model
+    return om
 
 def electricRodCapacityConstaint(om, numBuildings):
     """constraint to set the total capacity of electric rod equal to sum of total capacity selected for HP"""
@@ -221,4 +278,34 @@ def totalPVCapacityConstraint(om, numBuildings):
         "PVSizeConstr",
         pyo.Constraint(expr=expr),
     )
+    return om
+
+def PVTElectricalThermalCapacityConstraint(om, numBuildings):
+    pvtElOutFlows = [(i, o) for (i, o) in om.flows if ("elSource_pvt" in i.label)]
+    pvtShOutFlows = [(i, o) for (i, o) in om.flows if ("heatSource_SHpvt" in i.label)]
+    pvtDhwOutFlows = [(i, o) for (i, o) in om.flows if ("heatSource_DHWpvt" in i.label)]
+    for b in range(1, numBuildings + 1):
+        elCapacity = [om.InvestmentFlow.invest[i, o] for (i, o) in pvtElOutFlows if ((f'__Building{b}') in o.label)]
+        shCapacity = [om.InvestmentFlow.invest[i, o] for (i, o) in pvtShOutFlows if ((f'__Building{b}') in o.label)]
+        dhwCapacity = [om.InvestmentFlow.invest[i, o] for (i, o) in pvtDhwOutFlows if ((f'__Building{b}') in o.label)]
+        areaUnitCapEl = [getattr(om.flows[i, o].investment, 'space_el') for (i, o) in pvtElOutFlows if ((f'__Building{b}') in o.label)]
+        areaUnitCapSh = [getattr(om.flows[i, o].investment, 'space') for (i, o) in pvtShOutFlows if ((f'__Building{b}') in o.label)]
+        if elCapacity or shCapacity:
+            elCapacity = elCapacity[0]
+            shCapacity = shCapacity[0]
+            dhwCapacity = dhwCapacity[0]
+            areaUnitCapEl = areaUnitCapEl[0]
+            areaUnitCapSh = areaUnitCapSh[0]
+            expr = (elCapacity*areaUnitCapEl == shCapacity*areaUnitCapSh)
+            setattr(
+                om,
+                "PVTSizeConstrElTh_B"+str(b),
+                pyo.Constraint(expr=expr),
+            )
+            expr = (dhwCapacity == shCapacity)
+            setattr(
+                om,
+                "PVTSizeConstrDhwSh_B" + str(b),
+                pyo.Constraint(expr=expr),
+            )
     return om
