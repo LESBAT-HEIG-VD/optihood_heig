@@ -958,7 +958,6 @@ def createPlot(resultFilePath, basePath, numberOfBuildings, plotLevel, plotType,
         raise ValueError("Illegal value for the parameter flow type")
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
     if plotType == "energy balance":
         if plotLevel == "allMonths":
             for i in names:
@@ -1003,11 +1002,11 @@ def createPlot(resultFilePath, basePath, numberOfBuildings, plotLevel, plotType,
             os.makedirs(basePath)
 
         output_file(os.path.join(basePath,"HourlyBokehPlots.html"))
-        grid = gridplot(plotsHourly, ncols=ncols, plot_width=850, plot_height=500, sizing_mode="fixed")
+        grid = gridplot(plotsHourly, ncols=ncols, sizing_mode="scale_both")
         show(grid)
         if not any(chr.isdigit() for chr in plotLevel):
             output_file(os.path.join(basePath,"DailyBokehPlots.html"))
-            grid = gridplot(plotsDaily, ncols=ncols, plot_width=850, plot_height=500, sizing_mode="fixed")
+            grid = gridplot(plotsDaily, ncols=ncols, sizing_mode="scale_both")
             show(grid)
     else:
         raise ValueError("Illegal value for the parameter plot type")
@@ -1064,7 +1063,9 @@ def plot(excelFileName, figureFilePath, numberOfBuildings, plotLevel, plotType, 
     if plotlabels == 'default':
         newLegends = {
             "(('naturalGasResource', 'naturalGasBus'), 'flow')": "NaturalGas",
+            "(('qSource', 'heatSourceBus'), 'flow')": "qSource",
             "(('electricityBus', 'excesselectricityBus'), 'flow')": "Feed-in",
+            "(('electricityProdBus', 'excesselectricityProdBus'), 'flow')": "Feed-in",
             "(('electricityProdBus', 'electricalStorage'), 'flow')": "Battery_in",
             "(('electricityInBus', 'electricityDemand'), 'flow')": "Demand_elec",
             "(('electricityInBus', 'emobilityDemand'), 'flow')": "Demand_mobility",
@@ -1120,6 +1121,7 @@ def plot(excelFileName, figureFilePath, numberOfBuildings, plotLevel, plotType, 
     else:
         newLegends = {
             "(('naturalGasResource', 'naturalGasBus'), 'flow')": plotlabels["naturalGas"],
+            "(('qSource', 'heatSourceBus'), 'flow')": plotlabels["qSource"],
             "(('electricityBus', 'excesselectricityBus'), 'flow')": plotlabels["excessEl"],
             "(('electricityProdBus', 'electricalStorage'), 'flow')": plotlabels["StorageEl"]+"_in",
             "(('electricityInBus', 'electricityDemand'), 'flow')": plotlabels["DemandEl"],

@@ -1,0 +1,64 @@
+stn;Name;Parameter;Data source;Longitude;Latitude;Coordinates [km];Elevation [m]
+TAE;Aadorf / Tänikon;tso005hs;MeteoSchweiz;8.90;47.48;710517/259824;539
+AIG;Aigle;tso005hs;MeteoSchweiz;6.92;46.33;560404/130713;381
+DLKIS;Bad Kissingen;tso005hs;Deutscher Wetterdienst;10.08;50.22;-/-;281
+DLBAM;Bamberg;tso005hs;Deutscher Wetterdienst;10.92;49.87;-/-;240
+BAS;Basel / Binningen;tso005hs;MeteoSchweiz;7.58;47.53;610908/265611;316
+BER;Bern / Zollikofen;tso005hs;MeteoSchweiz;7.47;46.98;601933/204409;552
+DLBER;Berus;tso005hs;Deutscher Wetterdienst;6.68;49.27;-/-;363
+BUS;Buchs / Aarau;tso005hs;MeteoSchweiz;8.08;47.38;648395/248369;386
+DLCHI;Chieming;tso005hs;Deutscher Wetterdienst;12.53;47.88;-/-;551
+CHU;Chur;tso005hs;MeteoSchweiz;9.53;46.87;759465/193152;556
+DAV;Davos;tso005hs;MeteoSchweiz;9.85;46.82;783518/187458;1594
+DLDEU;Deuselbach;tso005hs;Deutscher Wetterdienst;7.05;49.77;-/-;480
+FAH;Fahy;tso005hs;MeteoSchweiz;6.93;47.42;562464/252675;596
+DLFEU;Feuchtwangen / Heilbronn;tso005hs;Deutscher Wetterdienst;10.37;49.17;-/-;475
+GRA;Fribourg / Grangeneuve;tso005hs;MeteoSchweiz;7.12;46.77;575183/180076;650
+DLFUR;Fürstenzell;tso005hs;Deutscher Wetterdienst;13.35;48.55;-/-;476
+DLGEH;Geisenheim;tso005hs;Deutscher Wetterdienst;7.95;49.98;-/-;110
+DLGEL;Gelbelsee;tso005hs;Deutscher Wetterdienst;11.43;48.95;-/-;536
+DLGOT;Gottfrieding;tso005hs;Deutscher Wetterdienst;12.53;48.67;-/-;350
+GUT;Güttingen;tso005hs;MeteoSchweiz;9.28;47.60;738421/273962;440
+DLHAR;Harburg;tso005hs;Deutscher Wetterdienst;10.70;48.80;-/-;501
+DLKAI;Kaisersbach / Cronhütte;tso005hs;Deutscher Wetterdienst;9.68;48.92;-/-;488
+DLKLE;Kleiner Feldberg, Taunus;tso005hs;Deutscher Wetterdienst;8.45;50.22;-/-;825
+KOP;Koppigen;tso005hs;MeteoSchweiz;7.60;47.12;612662/218664;485
+CDF;La Chaux-de-Fonds;tso005hs;MeteoSchweiz;6.80;47.08;550919/214861;1017
+DLLAU;Lautertal, Oberlauter;tso005hs;Deutscher Wetterdienst;10.97;50.30;-/-;344
+OTL;Locarno / Monti;tso005hs;MeteoSchweiz;8.78;46.17;704166/114316;366
+MAG;Magadino / Cadenazzo;tso005hs;MeteoSchweiz;8.93;46.17;715479/113161;203
+DLMAN;Mannheim;tso005hs;Deutscher Wetterdienst;8.55;49.52;-/-;96
+DLMIC;Michelstadt / Vielbrunn;tso005hs;Deutscher Wetterdienst;9.10;49.72;-/-;453
+DLMUH;Mühlacker;tso005hs;Deutscher Wetterdienst;8.87;48.97;-/-;244
+DLNEH;Neuhütten;tso005hs;Deutscher Wetterdienst;9.42;50.00;-/-;339
+DLWEB;Neustadt / Weinbiet;tso005hs;Deutscher Wetterdienst;8.12;49.38;-/-;553
+CGI;Nyon / Changins;tso005hs;MeteoSchweiz;6.23;46.40;506878/139572;458
+DLNUR;Nürburg / Barweiler;tso005hs;Deutscher Wetterdienst;6.87;50.37;-/-;485
+DLDWD;Offenbach;tso005hs;Deutscher Wetterdienst;8.78;50.08;-/-;118
+PAY;Payerne;tso005hs;MeteoSchweiz;6.95;46.82;562131/184611;490
+ROB;Poschiavo / Robbia;tso005hs;MeteoSchweiz;10.07;46.35;801992/136248;1078
+DLREG;Regensburg;tso005hs;Deutscher Wetterdienst;12.10;49.05;-/-;365
+ROE;Robièi;tso005hs;MeteoSchweiz;8.52;46.45;682587/144091;1898
+DLROH;Roth;tso005hs;Deutscher Wetterdienst;11.10;49.22;-/-;385
+SAM;Samedan;tso005hs;MeteoSchweiz;9.88;46.53;787249/155685;1708
+SIO;Sion;tso005hs;MeteoSchweiz;7.33;46.22;591633/118583;482
+STG;St. Gallen;tso005hs;MeteoSchweiz;9.40;47.43;747865/254588;775
+DLSTR;Straubing;tso005hs;Deutscher Wetterdienst;12.57;48.83;-/-;350
+DLSTS;Stuttgart / Schnarrenberg;tso005hs;Deutscher Wetterdienst;9.20;48.83;-/-;314
+DLTHO;Tholey;tso005hs;Deutscher Wetterdienst;7.03;49.47;-/-;385
+DLTRI;Trier;tso005hs;Deutscher Wetterdienst;6.65;49.75;-/-;265
+WSLUIB;Uitikon Bestand;tso005hs;Eidg. Forschungsanstalt WSL;8.45;47.37;676731/246286;543
+DLUMM;Ulm /Mähringen;tso005hs;Deutscher Wetterdienst;9.92;48.45;-/-;592
+VAD;Vaduz;tso005hs;MeteoSchweiz;9.52;47.13;757722/221699;457
+DLWAI;Waibstadt;tso005hs;Deutscher Wetterdienst;8.90;49.30;-/-;236
+DLWAL;Waldmünchen;tso005hs;Deutscher Wetterdienst;12.68;49.38;-/-;498
+DLWED;Weiden;tso005hs;Deutscher Wetterdienst;12.18;49.67;-/-;439
+DLWES;Weihenstephan / Dürnast;tso005hs;Deutscher Wetterdienst;11.70;48.40;-/-;477
+DLWEG;Weissenburg;tso005hs;Deutscher Wetterdienst;10.93;49.02;-/-;439
+DLWUN;Wunsiedel;tso005hs;Deutscher Wetterdienst;11.97;50.03;-/-;622
+WAE;Wädenswil;tso005hs;MeteoSchweiz;8.68;47.22;693847/230744;485
+DLWUR;Würzburg;tso005hs;Deutscher Wetterdienst;9.95;49.77;-/-;268
+DLZWI;Zwiesel;tso005hs;Deutscher Wetterdienst;13.23;49.03;-/-;615
+REH;Zürich / Affoltern;tso005hs;MeteoSchweiz;8.52;47.43;681432/253548;443
+KLO;Zürich / Kloten;tso005hs;MeteoSchweiz;8.53;47.48;682710/259338;426
+DLOHR;Öhringen;tso005hs;Deutscher Wetterdienst;9.52;49.20;-/-;275

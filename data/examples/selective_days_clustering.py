@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import os
 try:
@@ -27,25 +26,23 @@ if __name__ == '__main__':
                "2018-08-18": 26,
                "2018-05-28": 23,
                "2018-02-06": 48}
-    print(np.sum(np.array(list(cluster.values())).astype(int)))
-    #cluster = None
 
     # set a time period for the optimization problem according to the size of clusers
-    timePeriod = pd.date_range("2018-01-01 00:00:00", "2018-01-12 23:00:00", freq="60min")
+    timePeriod = pd.date_range("2018-01-01 00:00:00", "2018-12-31 23:00:00", freq="60min")
 
     # define paths for input and result files
     inputFilePath = r"..\excels\clustering"
     inputfileName = "scenario.xls"
 
     resultFilePath =r"..\results"
-    resultFileName ="results_yes.xlsx"
+    resultFileName ="results.xlsx"
 
     # initialize parameters
-    numberOfBuildings = 1
+    numberOfBuildings = 4
     optimizationType = "costs"  # set as "env" for environmental optimization
 
     # create an energy network and set the network parameters from an excel file
-    network = EnergyNetwork(timePeriod)
+    network = EnergyNetwork(timePeriod, clusters=cluster)
     network.setFromExcel(os.path.join(inputFilePath, inputfileName), numberOfBuildings, clusterSize=cluster, opt=optimizationType)
 
     # optimize the energy network
@@ -64,6 +61,8 @@ if __name__ == '__main__':
     # plot sankey diagram
     UseLabelDict = True     # a dictionary defining the labels to be used for different flows
     figureFilePath = r"..\figures"
+    if not os.path.exists(figureFilePath):
+        os.makedirs(figureFilePath)
     sankeyFileName = f"Sankey_{numberOfBuildings}_{optimizationType}.html"
 
     snk.plot(os.path.join(resultFilePath, resultFileName), os.path.join(figureFilePath, sankeyFileName),
