@@ -36,8 +36,9 @@ if __name__ == '__main__':
                     """ file management"""
                     # define paths for input and result files
                     inputFilePath = r"..\excels\clustering"
-                    inputfileName = "scenario_Annual_2_costs_100%_SH35_cluster_HPOnly.xls"
-                    # inputfileName = "scenario_Annual_2_costs_TES.xls"
+                    # inputfileName = "scenario_Annual_1_costs_100%_SH35_cluster_HPOnly.xls"
+                    # inputfileName = "scenario_Annual_2_costs_100%_SH35_cluster_HPOnly.xls"
+                    inputfileName = "scenario_Annual_2_costs_TES.xls"
                     # inputfileName = "scenario_Annual_2_costs_TES.xls"
                     # inputfileName = "scenario.xls"
                     
@@ -52,12 +53,16 @@ if __name__ == '__main__':
                     timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-12-31 23:00:00", freq="60min")
                     numberOfBuildings = 2
                     optimizationType = "costs"  # set as "env" for environmental optimization
-                    mergeLinkBuses_bool=False 
-                    tL_bool=False #temperature levels flag
+                    mergeLinkBuses_bool=True 
+                    tL_bool=True #temperature levels flag
+                    """ if tL_bool==False -> single dT and Tinlet for solar technologies
+                     and if True and stratified storage is interesting then mergeBuses
+                     points to heat_buses
+                    """
                     mergeBuses=["electricity",
-                                "space_heat",
-                                "domestic_hot_water",
-                                # "heat_buses"
+                                # "space_heat",
+                                # "domestic_hot_water",
+                                "heat_buses"
                                 ]
                     constraints_opt=["roof area"]
                     clusterBool=cl
