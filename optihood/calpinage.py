@@ -80,7 +80,7 @@ class Calpinage_light:
         if self.tecno=='pv':
             self.elec_demand=elec_demand+heat_demand/self.COPa
             self.heat_demand=heat_demand
-            self.PV_el_ef=float(tecno_df.loc[tecno_df.label=='pv','pv_efficiency'].iloc[0])
+            self.PV_el_ef=float(tecno_df.loc[tecno_df.label=='pv','efficiency'].iloc[0])
             self.l=float(tecno_df.loc[tecno_df.label=='pv','length'].iloc[0])
             self.w=float(tecno_df.loc[tecno_df.label=='pv','width'].iloc[0])
         elif self.tecno=='solarCollector':
@@ -109,7 +109,7 @@ class Calpinage_light:
         else:
             self.elec_demand=elec_demand+heat_demand/self.COPbrine
             self.heat_demand=heat_demand            
-            self.PVT_el_ef=float(tecno_df.loc[tecno_df.label=='pvt','pv_efficiency'].iloc[0])
+            self.PVT_el_ef=float(tecno_df.loc[tecno_df.label=='pvt','efficiency'].iloc[0])
             self.PVTeta_0=float(tecno_df.loc[tecno_df.label=='pvt',
                                     'eta_0'].iloc[0])
             self.PVTa_1=float(tecno_df.loc[tecno_df.label=='pvt',

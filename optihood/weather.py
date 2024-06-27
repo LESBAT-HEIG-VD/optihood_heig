@@ -793,7 +793,7 @@ class weather:
                   'active',
                   'zenith_angle',
                   'roof_area',
-                  'pv_efficiency',
+                  'efficiency',
                   'layout',
                   'space',
                   'cll_alignment']
