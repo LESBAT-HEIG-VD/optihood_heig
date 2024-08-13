@@ -30,7 +30,7 @@ def calcul_steps(min_env, max_env, number_of_steps):
 
     steps_H=[max_env]
     steps_L=[min_env]
-    mid_step_origin=(max_env+min_env)/2
+    mid_step_origin=(1/3*max_env+2/3*min_env)
     mid_step_L=mid_step_origin
     mid_step_H=mid_step_origin
     mid_p=number_of_steps//2
@@ -43,8 +43,8 @@ def calcul_steps(min_env, max_env, number_of_steps):
         steps_L.insert(1,step_val_L)
         mid_step_L=step_val_L
         
-    print(steps_L)
-    print(steps_H)
+    # print(steps_L)
+    # print(steps_H)
     steps_L.reverse()
     steps_L.insert(0,mid_step_origin)
     steps_H.extend(steps_L)
