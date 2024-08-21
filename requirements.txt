@@ -192,3 +192,9 @@ xlwt==1.3.0
     # via -r test_requirements.in
 xyzservices==2024.6.0
     # via bokeh
+geopandas
+shapely
+pyarrow
+spyder-kernels==2.4.*
+xlutils
+

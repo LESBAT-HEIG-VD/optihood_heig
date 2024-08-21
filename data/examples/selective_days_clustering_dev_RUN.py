@@ -71,7 +71,7 @@ if __name__ == '__main__':
                     else:
                         MIPGap_val=0.01 
                     N_cl=clN # number of meteo day clusters
-                    plot_bool=True # specify if sankey plots are required
+                    plot_bool=False # specify if sankey plots are required
                     
                     """ Create meteo file and compute clusters if needed."""
                     meteo_data=meteo(source=addr_source,
