@@ -478,7 +478,7 @@ class Building:
             capacityMinSH = float(data["capacity_SH"])
         else:
             capacityMinSH = float(data["capacity_min"])
-
+        
         heatPump = HeatPumpLinear(self.__buildingLabel, operationTempertures, temperatureAmb,
                                   inputBuses,
                                   outputBuses,

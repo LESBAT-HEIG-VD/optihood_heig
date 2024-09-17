@@ -37,32 +37,32 @@ if __name__ == '__main__':
                     # define paths for input and result files
                     inputFilePath = r"..\excels\clustering"
                     # inputfileName = "scenario_Annual_1_costs_100%_SH35_cluster_HPOnly.xls"
-                    # inputfileName = "scenario_Annual_2_costs_100%_SH35_cluster_HPOnly.xls"
-                    inputfileName = "scenario_Annual_8_costs_HP.xls"
+                    inputfileName = "scenario_Annual_10_costs_100%_SH35_cluster_HPOnly.xls"
+                    # inputfileName = "scenario_Annual_8_costs_HP.xls"
                     # inputfileName = "scenario_Annual_2_costs_TES.xls"
                     # inputfileName = "scenario.xls"
                     
                     resultFilePath =r"..\results"
-                    resultFileName ="results_TES_Cluster_"+str(clN)+"_Group_Roof_Merged_HPOnly.xlsx"
+                    resultFileName ="results_SH_DHW_NoCluster_"+str(clN)+"_Group_Roof_Merged_HPOnly.xlsx"
                     
                     #create weather file based on coordinates and PVGIS or supplying file to read
                     addr_source=os.path.join(inputFilePath, inputfileName)
                     
                     """ initialize parameters"""
                     # set a time period for the optimization problem according to the size of clusers
-                    timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-01-31 23:00:00", freq="60min")
-                    numberOfBuildings = 2
+                    timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-12-31 23:00:00", freq="60min")
+                    numberOfBuildings = 10
                     optimizationType = "costs"  # set as "env" for environmental optimization
                     mergeLinkBuses_bool=True 
-                    tL_bool=True #temperature levels flag
+                    tL_bool=False #temperature levels flag
                     """ if tL_bool==False -> single dT and Tinlet for solar technologies
                      and if True and stratified storage is interesting then mergeBuses
                      points to heat_buses
                     """
                     mergeBuses=["electricity",
-                                # "space_heat",
-                                # "domestic_hot_water",
-                                "heat_buses"
+                                "space_heat",
+                                "domestic_hot_water",
+                                # "heat_buses"
                                 ]
                     constraints_opt=["roof area"]
                     clusterBool=cl

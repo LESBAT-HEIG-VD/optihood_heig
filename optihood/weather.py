@@ -866,7 +866,7 @@ class weather:
                                                       "time.mm",
                                                       "time.dd",
                                                       "time.hh"])
-            self.MaxTMYear = self.irr_TMY.index.year.max()
+            self.MaxTMYear = 2021 #self.irr_TMY.index.year.max()
             self.irr_TMY.index = self.irr_TMY.index.map(
                 lambda t: t.replace(year=self.MaxTMYear))
             self.months = [{'month': 1, 'year': self.MaxTMYear},
@@ -885,8 +885,12 @@ class weather:
         elif self.solar_file == True:
             path = self.solar_f_adr
             meteo_data = pd.read_csv(path, sep='\t')
-            meteo_data.index = pd.to_datetime(meteo_data["time.yy"].astype(str) + "-" + meteo_data["time.mm"].astype(str) + "-" +
+            # meteo_data.index = pd.to_datetime(meteo_data["time.yy"].astype(str) + "-" + meteo_data["time.mm"].astype(str) + "-" +
+            #                                   meteo_data["time.dd"].astype(str) + " " + meteo_data["time.hh"].astype(str) + ":00:00")
+            
+            meteo_data.index = pd.to_datetime("2021-" + meteo_data["time.mm"].astype(str) + "-" +
                                               meteo_data["time.dd"].astype(str) + " " + meteo_data["time.hh"].astype(str) + ":00:00")
+            
             meteo_data = meteo_data.drop(columns=["stn",
                                                   "time.yy",
                                                   "time.mm",
