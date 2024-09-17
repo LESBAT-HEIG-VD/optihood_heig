@@ -142,9 +142,15 @@ def createSankeyData(dataDict, keys, UseLabelDict, labelDict, PositionDict, buil
                                 temp = (PositionDict[posKey][1]) / len(buildings) + buildingNumber / len(buildings)
                                 y.append(temp)
                             else:
-                                buildingNumber=buildings.index(int(sourceNodeName.split('_')[-1][1:]))
-                                temp = (PositionDict[posKey][1]) / len(buildings) + buildingNumber / len(buildings)
-                                y.append(temp)
+                                try:
+                                    buildingNumber=buildings.index(int(sourceNodeName.split('_')[-1][1:]))
+                                    temp = (PositionDict[posKey][1]) / len(buildings) + buildingNumber / len(buildings)
+                                    y.append(temp)
+                                except:
+                                    buildingNumber=buildings.index(int(sourceNodeName.split('_')[-1][-1]))
+                                    temp = (PositionDict[posKey][1]) / len(buildings) + buildingNumber / len(buildings)
+                                    y.append(temp)                                    
+                                        
                 sources.append(nodes.index(sourceNodeName))
 
                 if targetNodeName not in nodes:

@@ -276,7 +276,7 @@ class Building:
                                                        float(s["eta_0"]), float(s["a_1"]), float(s["a_2"]), inletTemp,data_timeseries['tre200h0'],
                                                        deltaT, data_timeseries['gls'], data_timeseries['str.diffus'], float(s["capacity_min"]), float(s["capacity_max"]),
                                                        epc, base, env_capa, env_flow, varc, dispatchMode,
-                                                       float(s["pv_efficiency"]),0.85,float(s["space"]),s.layout)
+                                                       float(s["efficiency"]),0.85,float(s["space"]),s.layout)
                 nodes = [pvtcollector.getPVT("el_source")]
                 for t in ["heat_source", "heat_transformer", "excess_heat_sink"]:
                     nodes.append(pvtcollector.getPVT(t))
@@ -478,7 +478,7 @@ class Building:
             capacityMinSH = float(data["capacity_SH"])
         else:
             capacityMinSH = float(data["capacity_min"])
-
+        
         heatPump = HeatPumpLinear(self.__buildingLabel, operationTempertures, temperatureAmb,
                                   inputBuses,
                                   outputBuses,
