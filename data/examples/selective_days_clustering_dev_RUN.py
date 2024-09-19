@@ -45,7 +45,7 @@ if __name__ == '__main__':
                     # inputfileName = "scenario.xls"
                     
                     resultFilePath =r"..\results"
-                    resultFileName ="results_TES_Indiv_"+str(clN)+"_TES_HP_10bld_mergeFalse_costs.xlsx"
+                    resultFileName ="results_TES_Indiv_"+str(clN)+"_TES_HP_10bld_mergeFalse_costs_noHeatLink.xlsx"
                     
                     #create weather file based on coordinates and PVGIS or supplying file to read
                     addr_source=os.path.join(inputFilePath, inputfileName)
@@ -55,7 +55,7 @@ if __name__ == '__main__':
                     timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-12-31 23:00:00", freq="60min")
                     numberOfBuildings = 10
                     optimizationType = "costs"  # set as "env" for environmental optimization
-                    mergeLinkBuses_bool=True 
+                    mergeLinkBuses_bool=False 
                     tL_bool=True #temperature levels flag
                     """ if tL_bool==False -> single dT and Tinlet for solar technologies
                      and if True and stratified storage is interesting then mergeBuses
