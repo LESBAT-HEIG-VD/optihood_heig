@@ -7,7 +7,8 @@ try:
 except ImportError:
     plt = None
 from optihood.weather import weather as meteo
-from optihood.energy_network import EnergyNetworkGroup as EnergyNetwork
+# from optihood.energy_network import EnergyNetworkGroup as EnergyNetwork
+from optihood.energy_network import EnergyNetworkIndiv as EnergyNetwork
 import optihood.plot_sankey as snk
 import optihood.plot_functions as fnc
 
@@ -16,7 +17,7 @@ import optihood.plot_functions as fnc
 if __name__ == '__main__':
 
     cluster_N=[0]#72
-    merge_opt=[True]
+    merge_opt=[False]
     con_opt=["Con"] #["Con","noCon"]
     clst_opt=[True]
     
@@ -38,12 +39,13 @@ if __name__ == '__main__':
                     inputFilePath = r"..\excels\clustering"
                     # inputfileName = "scenario_Annual_1_costs_100%_SH35_cluster_HPOnly.xls"
                     # inputfileName = "scenario_Annual_2_costs_100%_SH35_cluster_HPOnly.xls"
-                    inputfileName = "scenario_Annual_10_costs_TES_allHP.xls"
+                    # inputfileName = "scenario_Annual_10_costs_TES_allHP.xls"
+                    inputfileName = "scenario_Annual_10_costs_TES_HP.xls"
                     #inputfileName = "scenario_Annual_2_costs_TES.xls"
                     # inputfileName = "scenario.xls"
                     
                     resultFilePath =r"..\results"
-                    resultFileName ="results_TES_Cluster_"+str(clN)+"_TES_allHP_10bld.xlsx"
+                    resultFileName ="results_TES_Indiv_"+str(clN)+"_TES_HP_10bld_mergeFalse_costs.xlsx"
                     
                     #create weather file based on coordinates and PVGIS or supplying file to read
                     addr_source=os.path.join(inputFilePath, inputfileName)
