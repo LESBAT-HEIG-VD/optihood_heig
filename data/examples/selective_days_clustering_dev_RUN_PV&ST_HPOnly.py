@@ -37,7 +37,7 @@ if __name__ == '__main__':
                     # define paths for input and result files
                     inputFilePath = r"..\excels\clustering"
                     # inputfileName = "scenario_Annual_1_costs_100%_SH35_cluster_HPOnly.xls"
-                    inputfileName = "scenario_Annual_10_costs_100%_SH35_cluster_HPOnly.xls"
+                    inputfileName = "scenario_Annual_10_costs_100%_SH35_cluster_GASOnly.xls"
                     # inputfileName = "scenario_Annual_10_costs_100%_SH35_cluster_GWHPOnly.xls"
                     # inputfileName = "scenario_Annual_9_costs_100%_SH35_cluster_GASOnly.xls"
                     # inputfileName = "scenario_Annual_8_costs_HP.xls"
@@ -45,7 +45,7 @@ if __name__ == '__main__':
                     # inputfileName = "scenario.xls"
                     
                     resultFilePath =r"..\results"
-                    resultFileName ="results_SH_DHW_NoCluster_"+str(clN)+"_Group_Roof_Merged_HPOnly.xlsx"
+                    resultFileName ="results_SH_DHW_NoCluster_"+str(clN)+"_DistFalse_GASOnly.xlsx"
                     
                     #create weather file based on coordinates and PVGIS or supplying file to read
                     addr_source=os.path.join(inputFilePath, inputfileName)
