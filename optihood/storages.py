@@ -119,15 +119,34 @@ class ThermalStorage(solph.components.GenericStorage):
             temp_env = data.at[label, 'temp_env']
             rho = data.at[label, 'rho']
             c = data.at[label, 'c']
-            u_value = data.at[label, 'u_value']
+            
             time_increment =1
             if 'pitStorage' in label:
+                u_value_side = calculate_storage_u_value(
+                    data.at[label, 's_iso'],
+                    data.at[label, 'lamb_iso'],
+                    data.at[label, 'alpha_inside'],
+                    data.at[label, 'alpha_outside'])
+                u_value_btm = calculate_storage_u_value(
+                    data.at[label, 's_iso_bot'],
+                    data.at[label, 'lamb_iso_bot'],
+                    data.at[label, 'alpha_inside'],
+                    data.at[label, 'alpha_outside'])
+                u_value_top = calculate_storage_u_value(
+                    data.at[label, 's_iso_bot'],
+                    data.at[label, 'lamb_iso_bot'],
+                    data.at[label, 'alpha_inside'],
+                    data.at[label, 'alpha_outside'])
+                # for a height to diameter ratio of 1:3 to 1:4, chosen 1:3
+                u_value=data.at[label, 'u_value'] #u_value_side
+                
                 height = data.at[label, 'height']
                 angle = data.at[label, 'angle']
                 fixed_losses_relative = 3 * u_value * (temp_c - temp_env) / (height * c * rho * (temp_h - temp_c)) * time_increment *3600
                 loss_rate = 0#0.4 * fixed_losses_relative#2 * u_value / (s_base * c * rho * math.sin(angle * np.pi / 180)) * time_increment
                 fixed_losses_absolute = 0
             else:
+                # u_value = data.at[label, 'u_value']
                 loss_rate = 0
                 fixed_losses_relative = 0
                 fixed_losses_absolute = u_value*(temp_h - temp_env)*1e-6 #convert Wh to MWh

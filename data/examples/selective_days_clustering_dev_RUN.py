@@ -7,8 +7,8 @@ try:
 except ImportError:
     plt = None
 from optihood.weather import weather as meteo
-# from optihood.energy_network import EnergyNetworkGroup as EnergyNetwork
-from optihood.energy_network import EnergyNetworkIndiv as EnergyNetwork
+from optihood.energy_network import EnergyNetworkGroup as EnergyNetwork
+# from optihood.energy_network import EnergyNetworkIndiv as EnergyNetwork
 import optihood.plot_sankey as snk
 import optihood.plot_functions as fnc
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
                     # for clN in cluster_N:
                     # In this example we consider 12 clusters
                     # 12 representative days for the whole year
-                    # The number of days belonging to each cluster is defined in the dictionary 'cluster'
+                    # The number of days belongi-ng to each cluster is defined in the dictionary 'cluster'
                 
                     """ file management"""
                     # define paths for input and result files
@@ -40,12 +40,14 @@ if __name__ == '__main__':
                     # inputfileName = "scenario_Annual_1_costs_100%_SH35_cluster_HPOnly.xls"
                     # inputfileName = "scenario_Annual_2_costs_100%_SH35_cluster_HPOnly.xls"
                     # inputfileName = "scenario_Annual_10_costs_TES_allHP.xls"
+                    # inputfileName = "scenario_Annual_2_costs_TES_PVT_PV_ST_HP.xls"
                     inputfileName = "scenario_Annual_10_costs_TES_HP.xls"
+                    # inputfileName = "scenario_Annual_10_costs_TES_HP.xls"
                     #inputfileName = "scenario_Annual_2_costs_TES.xls"
                     # inputfileName = "scenario.xls"
                     
                     resultFilePath =r"..\results"
-                    resultFileName ="results_TES_Indiv_"+str(clN)+"_TES_HP_10bld_mergeFalse_costs_noHeatLink.xlsx"
+                    resultFileName ="results_TES_PVT_PV_ST_GWHP_2bld_mergeFalse_costs_YesHeatLink.xlsx"
                     
                     #create weather file based on coordinates and PVGIS or supplying file to read
                     addr_source=os.path.join(inputFilePath, inputfileName)
@@ -55,7 +57,7 @@ if __name__ == '__main__':
                     timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-12-31 23:00:00", freq="60min")
                     numberOfBuildings = 10
                     optimizationType = "costs"  # set as "env" for environmental optimization
-                    mergeLinkBuses_bool=False 
+                    mergeLinkBuses_bool=mm 
                     tL_bool=True #temperature levels flag
                     """ if tL_bool==False -> single dT and Tinlet for solar technologies
                      and if True and stratified storage is interesting then mergeBuses
@@ -131,7 +133,7 @@ if __name__ == '__main__':
                             # Reduced costs must all be smaller than OptimalityTol in the improving direction in order for a model to be declared optimal
                             "MIPGap": MIPGap_val,
                             # Relative Tolerance between the best integer objective and the objective of the best node remaining
-                            "MIPFocus": 1
+                            "MIPFocus": 2
                             # 1 feasible solution quickly. 2 proving optimality. 3 if the best objective bound is moving very slowly/focus on the bound
                             # "Cutoff": #Indicates that you aren't interested in solutions whose objective values are worse than the specified value., could be dynamically be used in moo
                         },

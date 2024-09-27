@@ -55,7 +55,7 @@ def plot_sankey_diagram(figureFilePath, numberOfBuildings, optimizationType, res
 
 if __name__ == '__main__':
     # set a time period for the optimization problem
-    timePeriod = pd.date_range("2018-01-01 00:00:00", "2018-01-15 23:00:00", freq="60min")
+    timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-01-15 23:00:00", freq="60min")
 
     # define paths for input and result files
     curDir = _pl.Path(__file__).resolve().parent
