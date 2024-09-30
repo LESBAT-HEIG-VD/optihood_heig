@@ -30,7 +30,7 @@ def calcul_steps(min_env, max_env, number_of_steps):
 
     steps_H=[max_env]
     steps_L=[min_env]
-    mid_step_origin=(1/3*max_env+2/3*min_env)
+    mid_step_origin=(max_env+min_env)/2
     mid_step_L=mid_step_origin
     mid_step_H=mid_step_origin
     mid_p=number_of_steps//2
@@ -43,8 +43,8 @@ def calcul_steps(min_env, max_env, number_of_steps):
         steps_L.insert(1,step_val_L)
         mid_step_L=step_val_L
         
-    # print(steps_L)
-    # print(steps_H)
+    print(steps_L)
+    print(steps_H)
     steps_L.reverse()
     steps_L.insert(0,mid_step_origin)
     steps_H.extend(steps_L)
@@ -56,15 +56,19 @@ def calcul_steps(min_env, max_env, number_of_steps):
 if __name__ == '__main__':
 
     # initialize parameters
-    numberOfOptimizations = 15 # ODD NUMBER number of optimizations in multi objective optimization pareto front
+    numberOfOptimizations = 7 # ODD NUMBER number of optimizations in multi objective optimization pareto front
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
     numberOfBuildings = 2
-    cluster_N = [60]
-    merge_opt = [True]
+    cluster_N = [0]
+    merge_opt = [False]
     con_opt = ["Con"]  # ["Con","noCon"]
     clst_opt = [True]
-    clN=60
+    clN=0
+    if clN==0:
+        cl=False
+    else:
+        cl=True
     # for clN in cluster_N:
     # In this example we consider 12 clusters
     # 12 representative days for the whole year
@@ -75,12 +79,13 @@ if __name__ == '__main__':
     inputFilePath = r"..\excels\clustering"
     # inputfileName = "scenario_Annual_1_costs_100%_SH35_cluster_HPOnly.xls"
     # inputfileName = "scenario_Annual_2_costs_100%_SH35_cluster_HPOnly.xls"
-    inputfileName = "scenario_Annual_2_costs_100%_SH35_cluster_HPOnly.xls"
+    inputfileName = "scenario_Annual_2_costs_TES.xls"
     # inputfileName = "scenario_Annual_2_costs_TES.xls"
     # inputfileName = "scenario.xls"
 
     resultFilePath = r"..\results"
-    resultFileName = "results_Pareto_Optimization_Cluster_" + str(clN) + "_Group_Roof_Merged.xlsx"
+    resultFileName = "results_TES_env550000_allHP_2bld.xlsx"
+    # resultFileName = "results_TES_env_" + str(clN) + "_TES_allHP_10bld.xlsx"
 
     # create weather file based on coordinates and PVGIS or supplying file to read
     addr_source = os.path.join(inputFilePath, inputfileName)
@@ -89,35 +94,41 @@ if __name__ == '__main__':
     # set a time period for the optimization problem according to the size of clusers
     timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-12-31 23:00:00", freq="60min")
     optimizationType = "env"  # set as "env" for environmental optimization
-    mergeLinkBuses_bool = True
-    tL_bool = False  # temperature levels flag
+    mergeLinkBuses_bool = False
+    tL_bool = True  # temperature levels flag
     """ if tL_bool==False -> single dT and Tinlet for solar technologies
      and if True and stratified storage is interesting then mergeBuses
      points to heat_buses
     """
+    # mergeBuses = ["electricity",
+    #               "space_heat",
+    #               "domestic_hot_water",
+    #               # "heat_buses"
+    #               ]
+
     mergeBuses = ["electricity",
-                  "space_heat",
-                  "domestic_hot_water",
-                  # "heat_buses"
+                  # "space_heat",
+                  # "domestic_hot_water",
+                  "heat_buses"
                   ]
     constraints_opt = ["roof area"]
-    clusterBool = True
+    clusterBool = cl
     if clusterBool == True:
         MIPGap_val = 0.001
     else:
         MIPGap_val = 0.01
     N_cl = clN  # number of meteo day clusters
-    plot_bool = True  # specify if sankey plots are required
+    plot_bool = False  # specify if sankey plots are required
 
     """ Create meteo file and compute clusters if needed."""
-    meteo_data = meteo(source=addr_source,
-                       n_clusters=N_cl,
-                       cluster=clusterBool,
-                       clustering_vars=[],
-                       save_file=True,
-                       load_file=False,
-                       set_scenario=True,
-                       single_scenario=False)
+    meteo_data=meteo(source=addr_source,
+                     n_clusters=N_cl,
+                     cluster=clusterBool,
+                     clustering_vars=[],
+                     save_file=True,
+                     load_file=False,
+                     set_scenario=True,
+                     single_scenario=False)
     # create electricity profile based on Romande Energie tarif
     # or spot profile in electricity_spot.csv
     # options are : "Tarif" or "Spot"
@@ -140,13 +151,14 @@ if __name__ == '__main__':
     #                          columns=["day_index"],
     #                          index=pd.date_range(start='01-01-2018 00:00',periods=12,freq="D"))
 
-    if clusterBool == True:
-        meteo_data.results.index = meteo_data.results.index.strftime('%Y-%m-%d')
-        clusterBook = pd.DataFrame(meteo_data.code_BK)
-        cluster = meteo_data.results['count'].to_dict()
-    elif clusterBool == False:  # if no cluster is required, cluster={}
-        cluster = {}
-        clusterBook = pd.DataFrame()
+    if clusterBool==True:
+        meteo_data.results.index=meteo_data.results.index.strftime('%Y-%m-%d')
+        clusterBook=pd.DataFrame(meteo_data.code_BK)
+        cluster=meteo_data.results['count'].to_dict()
+    elif clusterBool==False: #if no cluster is required, cluster={}
+        cluster={}
+        clusterBook=pd.DataFrame()
+
 
 
     # solver specific command line options
@@ -158,7 +170,7 @@ if __name__ == '__main__':
             # Reduced costs must all be smaller than OptimalityTol in the improving direction in order for a model to be declared optimal
             "MIPGap": MIPGap_val,
             # Relative Tolerance between the best integer objective and the objective of the best node remaining
-            "MIPFocus": 1
+            "MIPFocus": 2
             # 1 feasible solution quickly. 2 proving optimality. 3 if the best objective bound is moving very slowly/focus on the bound
             # "Cutoff": #Indicates that you aren't interested in solutions whose objective values are worse than the specified value., could be dynamically be used in moo
         }
@@ -231,7 +243,7 @@ if __name__ == '__main__':
         network.printEnvImpacts()
 
         # save results
-        resultFileName = "results_pareto" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
+        resultFileName = "results_pareto_mergeFalse_Group_" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
 
         if not os.path.exists(resultFilePath):
             os.makedirs(resultFilePath)
@@ -278,7 +290,7 @@ if __name__ == '__main__':
     if not os.path.exists(figureFilePath):
         os.makedirs(figureFilePath)
 
-    figureFileName = f"Pareto4_testbis_HPonly.png"
+    figureFileName = f"Pareto_2_AllHP_PV_ST_TES.png"
 
     plotParetoFront(os.path.join(figureFilePath, figureFileName), costsList, envList)
 
