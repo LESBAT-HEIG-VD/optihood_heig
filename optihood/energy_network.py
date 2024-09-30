@@ -1080,7 +1080,7 @@ class EnergyNetworkClass(solph.EnergySystem):
                     if key[0].startswith('heatSource_pvt_') and key[0].endswith(buildingLabel):
                         pvt_counter+=1
                 for n in range(1,1+pvt_counter):
-                    invest = capacitiesInvestedTransformers[("heatSource_SHpvt_" + str(n) + "__" + buildingLabel, "pvtConnectBus__" + buildingLabel)]
+                    invest = capacitiesInvestedTransformers[("heatSource_SHpvt_" + str(n) + "__" + buildingLabel, "pvtConnectBusSH__" + buildingLabel)]
                 # if invest > 0.05:
                     print("Invested in {:.1f} m² of  PVT_{}".format(invest,str(n)))
             if "electricalStorage__" + buildingLabel in capacitiesInvestedStorages:

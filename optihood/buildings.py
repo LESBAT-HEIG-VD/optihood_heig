@@ -197,9 +197,9 @@ class Building:
                     varc= float(s["heat_impact"]) # variable cost is only passed for environmental optimization if there are emissions per kWh of energy produced from the unit
 
                     envParam = [env_flow, 0, env_capa]
-                if type(deltaT) not in [float,np.float64]:
-                    deltaT=deltaT[1]
-                    inletTemp=inletTemp[1]
+                # if type(deltaT) not in [float,np.float64]:
+                #     deltaT=deltaT[1]
+                #     inletTemp=inletTemp[1]
                 # If roof area and zenith do not exist in the excel file
                 if 'roof_area' not in s.keys():
                     s["roof_area"] = np.nan
@@ -234,12 +234,12 @@ class Building:
                     inputBusLabel = s["from"]
                 else:
                     inputBusLabel = s["from"] + '__' + self.__buildingLabel
-
-                outputBuses = [self.__busDict[s["to"].split(",")[0] + '__' + self.__buildingLabel],
-                               self.__busDict[s["to"].split(",")[1] + '__' + self.__buildingLabel],
-                               self.__busDict[s["to"].split(",")[2] + '__' + self.__buildingLabel]]
-                connectBuses = [self.__busDict[s["connect"].split(",")[0] + '__' + self.__buildingLabel],
-                               self.__busDict[s["connect"].split(",")[1] + '__' + self.__buildingLabel]]
+                outputBuses = [self.__busDict[o + '__' + self.__buildingLabel] for o in s["to"].split(",")]
+                connectBuses = [self.__busDict[c + '__' + self.__buildingLabel] for c in s["connect"].split(",")]
+                if isinstance(s["delta_temp_n"], float) or isinstance(s["delta_temp_n"], int):
+                    delta_temp_n = [float(s["delta_temp_n"])]
+                else:
+                    delta_temp_n = [float(t) for t in s["delta_temp_n"].split(",")]
                 if opt == "costs":
                     epc = self._calculateInvest(s)[0]
                     base = self._calculateInvest(s)[1]
@@ -258,10 +258,8 @@ class Building:
                                      "heat_impact"])  # variable cost is only passed for environmental optimization if there are emissions per kWh of energy produced from the unit
 
                     envParam = [env_flow, 0, env_capa]
-                deltaT = [float(t) for t in s["delta_temp_n"].split(",")]
-                inletTemp = [float(t) for t in s["temp_collector_inlet"].split(",")]
 
-                # If roof area does not exist in the excel file
+               # If roof area does not exist in the excel file
                 if 'roof_area' not in s.keys():
                     s["roof_area"] = np.nan
                 else:
@@ -279,21 +277,33 @@ class Building:
                                                        float(s["efficiency"]),0.85,float(s["space"]),s.layout)
                 nodes = [pvtcollector.getPVT("el_source")]
                 for t in ["heat_source", "heat_transformer", "excess_heat_sink"]:
-                    nodes.append(pvtcollector.getPVT(t))
+                    sh, T2, dhw = pvtcollector.getPVT(t)
+                    if outputBuses.__len__() == 3:
+                        nodes.extend([sh, dhw])
+                    elif outputBuses.__len__() == 4:
+                        nodes.extend([sh, T2, dhw])
+                    else:
+                        nodes.extend([sh])
                 for x in nodes:
                     self.__nodesList.append(x)
-
-
-                self.__envParam['heatSourceSH_' + s['label'] + '__' + self.__buildingLabel] = envParam
-                self.__envParam['heatSourceDHW_' + s['label'] + '__' + self.__buildingLabel] = [env_flow, 0, 0]
-                self.__costParam['heatSourceSH_' + s['label'] + '__' + self.__buildingLabel] = [self._calculateInvest(s)[0],
-                                                                                            self._calculateInvest(s)[1]]
-                self.__costParam['heatSourceDHW_' + s['label'] + '__' + self.__buildingLabel] = [0, 0]
-
+  
+                self.__envParam['heatSource_SH' + s['label'] + '__' + self.__buildingLabel] = envParam
+                self.__costParam['heatSource_SH' + s['label'] + '__' + self.__buildingLabel] = [self._calculateInvest(s)[0],
+                                                                                                self._calculateInvest(s)[1]]
                 self.__technologies.append(
                     [outputBuses[0], s["label"] + 'SH__' + self.__buildingLabel])
-                self.__technologies.append(
-                    [outputBuses[1], s["label"] + 'DHW__' + self.__buildingLabel])
+  
+                if outputBuses.__len__() >= 3:
+                    self.__envParam['heatSource_DHW' + s['label'] + '__' + self.__buildingLabel] = [env_flow, 0, 0]
+                    self.__costParam['heatSource_DHW' + s['label'] + '__' + self.__buildingLabel] = [0, 0]
+                    self.__technologies.append(
+                        [outputBuses[-2], s["label"] + 'DHW__' + self.__buildingLabel])
+  
+                if outputBuses.__len__() == 4:
+                    self.__envParam['heatSource_T2' + s['label'] + '__' + self.__buildingLabel] = [env_flow, 0, 0]
+                    self.__costParam['heatSource_T2' + s['label'] + '__' + self.__buildingLabel] = [0, 0]
+                    self.__technologies.append(
+                        [outputBuses[1], s["label"] + 'T2__' + self.__buildingLabel])
 
     def addGridSeparation(self, dataGridSeparation, mergeLinkBuses):
         if not dataGridSeparation.empty:
@@ -458,6 +468,10 @@ class Building:
         hpSHLabel = data["label"] + '__' + self.__buildingLabel
         if mergeLinkBuses and data["from"] in self.__linkBuses:
             inputBusLabel = [data["from"]]
+        elif mergeLinkBuses and any([b in self.__linkBuses for b in data["from"].split(',')]):
+            inputBusLabel = [i + '__' + self.__buildingLabel for i in data["from"].split(",") if
+                             i not in self.__linkBuses]
+            inputBusLabel.extend([i for i in data["from"].split(",") if i in self.__linkBuses])
         elif mergeHeatSourceSink and any([b in self.__heatSourceSinkBuses for b in data["from"].split(',')]):
             inputBusLabel = [i + '__' + self.__buildingLabel for i in data["from"].split(",") if
                              i not in self.__heatSourceSinkBuses]
@@ -478,7 +492,7 @@ class Building:
             capacityMinSH = float(data["capacity_SH"])
         else:
             capacityMinSH = float(data["capacity_min"])
-        
+
         heatPump = HeatPumpLinear(self.__buildingLabel, operationTempertures, temperatureAmb,
                                   inputBuses,
                                   outputBuses,
