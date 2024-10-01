@@ -59,9 +59,9 @@ if __name__ == '__main__':
     numberOfOptimizations = 7 # ODD NUMBER number of optimizations in multi objective optimization pareto front
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
-    numberOfBuildings = 2
+    numberOfBuildings = 10
     cluster_N = [0]
-    merge_opt = [False]
+    merge_opt = [True]
     con_opt = ["Con"]  # ["Con","noCon"]
     clst_opt = [True]
     clN=0
@@ -79,12 +79,12 @@ if __name__ == '__main__':
     inputFilePath = r"..\excels\clustering"
     # inputfileName = "scenario_Annual_1_costs_100%_SH35_cluster_HPOnly.xls"
     # inputfileName = "scenario_Annual_2_costs_100%_SH35_cluster_HPOnly.xls"
-    inputfileName = "scenario_Annual_2_costs_TES.xls"
+    inputfileName = "scenario_Annual_10_costs_TES_Final.xls"
     # inputfileName = "scenario_Annual_2_costs_TES.xls"
     # inputfileName = "scenario.xls"
 
     resultFilePath = r"..\results"
-    resultFileName = "results_TES_env550000_allHP_2bld.xlsx"
+    resultFileName = "results_TES_Final_10bld.xlsx"
     # resultFileName = "results_TES_env_" + str(clN) + "_TES_allHP_10bld.xlsx"
 
     # create weather file based on coordinates and PVGIS or supplying file to read
@@ -93,8 +93,8 @@ if __name__ == '__main__':
     """ initialize parameters"""
     # set a time period for the optimization problem according to the size of clusers
     timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-12-31 23:00:00", freq="60min")
-    optimizationType = "env"  # set as "env" for environmental optimization
-    mergeLinkBuses_bool = False
+    optimizationType = "costs"  # set as "env" for environmental optimization
+    mergeLinkBuses_bool = True
     tL_bool = True  # temperature levels flag
     """ if tL_bool==False -> single dT and Tinlet for solar technologies
      and if True and stratified storage is interesting then mergeBuses
@@ -128,7 +128,7 @@ if __name__ == '__main__':
                      save_file=True,
                      load_file=False,
                      set_scenario=True,
-                     single_scenario=False)
+                     single_scenario=True)
     # create electricity profile based on Romande Energie tarif
     # or spot profile in electricity_spot.csv
     # options are : "Tarif" or "Spot"
@@ -164,9 +164,9 @@ if __name__ == '__main__':
     # solver specific command line options
     optimizationOptions = {
         "gurobi": {
-            #"BarConvTol": 0.5,
+            "BarConvTol": 0.5,
             # The barrier solver terminates when the relative difference between the primal and dual objective values is less than the specified tolerance (with a GRB_OPTIMAL status)
-            #"OptimalityTol": 1e-4,
+            "OptimalityTol": 1e-4,
             # Reduced costs must all be smaller than OptimalityTol in the improving direction in order for a model to be declared optimal
             "MIPGap": MIPGap_val,
             # Relative Tolerance between the best integer objective and the objective of the best node remaining

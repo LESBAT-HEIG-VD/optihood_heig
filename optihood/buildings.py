@@ -271,8 +271,8 @@ class Building:
                                                        float(s["electrical_consumption"]), float(s["peripheral_losses"]), float(s["latitude"]),
                                                        float(s["longitude"]), float(s["tilt"]), s["roof_area"],
                                                        float(s["zenith_angle"]), float(s["azimuth"]),
-                                                       float(s["eta_0"]), float(s["a_1"]), float(s["a_2"]), inletTemp,data_timeseries['tre200h0'],
-                                                       deltaT, data_timeseries['gls'], data_timeseries['str.diffus'], float(s["capacity_min"]), float(s["capacity_max"]),
+                                                       float(s["eta_0"]), float(s["a_1"]), float(s["a_2"]), float(s["temp_collector_inlet"]),data_timeseries['tre200h0'],
+                                                       delta_temp_n, data_timeseries['gls'], data_timeseries['str.diffus'], float(s["capacity_min"]), float(s["capacity_max"]),
                                                        epc, base, env_capa, env_flow, varc, dispatchMode,
                                                        float(s["efficiency"]),0.85,float(s["space"]),s.layout)
                 nodes = [pvtcollector.getPVT("el_source")]

@@ -718,40 +718,52 @@ class weather:
         return None
 
     def single_case(self):
-        self.solar_cases_select = pd.DataFrame(
-            columns=self.solar_cases.columns)
+        select_prov=np.empty_like(self.solar_cases.iloc[0,:])
         for bld in self.df_hood.building:
+            
             for i in range(3):
                 if self.tecno_db.iloc[int(bld-1), i] == 1:
                     tec = self.tecno_db.columns[i]
-                    select = self.solar_cases.loc[self.solar_cases.bld_name ==
-                                                  bld, :].loc[self.solar_cases.Techno == tec, :]
-                    if tec == 'pv' or tec == 'pvt':
-                        self.solar_cases_select = self.solar_cases_select.append(
-                            select.loc[select['ICPe'].idxmax(), :])
-                    else:
-                        self.solar_cases_select = self.solar_cases_select.append(
-                            select.loc[select['ICPth'].idxmax(), :])
-                    # self.solar_cases_select=pd.concat([self.solar_cases_select,select_max],axis=0)
-                    # self.solar_cases_select=self.solar_cases_select.loc[0,:]
-                    # self.solar_cases_select=self.solar_cases_select.append(select_max)
-            pv_counter = 0
-            pvt_counter = 0
-            st_counter = 0
-            for i in range(self.solar_cases_select.index.size):
-                if self.solar_cases_select.bld_name.iloc[i] == bld:
-                    if self.solar_cases_select.Techno.iloc[i] == 'pvt':
-                        pvt_counter = pvt_counter+1
-                        self.solar_cases_select.loc[
-                            self.solar_cases_select.index[i], 'Techno'] = 'pvt_'+str(pvt_counter)
-                    if self.solar_cases_select.Techno.iloc[i] == 'pv':
-                        pv_counter = pv_counter+1
-                        self.solar_cases_select.loc[
-                            self.solar_cases_select.index[i], 'Techno'] = 'pv_'+str(pv_counter)
-                    if self.solar_cases_select.Techno.iloc[i] == 'solarCollector':
-                        st_counter = st_counter+1
-                        self.solar_cases_select.loc[
-                            self.solar_cases_select.index[i], 'Techno'] = 'solarCollector_'+str(st_counter)
+                    
+                    select = self.solar_cases.loc[
+                        self.solar_cases.bld_name == bld, :].loc[
+                            self.solar_cases.Techno == tec, :]
+                    if select.empty==False:
+                        
+                   
+                        if tec == 'pv' or tec == 'pvt':
+                            select_prov=np.vstack([select_prov,select.loc[select['ICPe'].idxmax(), :]])
+                            # self.solar_cases_select = pd.concat([self.solar_cases_select,
+                            #                                      select.loc[select['ICPe'].idxmax(), :]], axis=1)
+                            
+                        else:
+                            # self.solar_cases_select = pd.concat([self.solar_cases_select,
+                            #                                      select.loc[select['ICPth'].idxmax(), :]], axis=1)
+                            select_prov=np.vstack([select_prov,select.loc[select['ICPth'].idxmax(), :]])
+                            # self.solar_cases_select = self.solar_cases_select.append(
+                            #     select.loc[select['ICPth'].idxmax(), :])
+                        
+                        
+            if select_prov[0,1]==None:                        
+                select_prov=np.delete(select_prov,0,0)
+            self.solar_cases_select = pd.DataFrame(select_prov,columns=self.solar_cases.columns)
+            # pv_counter = 0
+            # pvt_counter = 0
+            # st_counter = 0
+            # for i in range(self.solar_cases_select.index.size):
+            #     if self.solar_cases_select.bld_name.iloc[i] == bld:
+            #         if self.solar_cases_select.Techno.iloc[i] == 'pvt':
+            #             pvt_counter = pvt_counter+1
+            #             self.solar_cases_select.loc[
+            #                 self.solar_cases_select.index[i], 'Techno'] = 'pvt_'+str(pvt_counter)
+            #         if self.solar_cases_select.Techno.iloc[i] == 'pv':
+            #             pv_counter = pv_counter+1
+            #             self.solar_cases_select.loc[
+            #                 self.solar_cases_select.index[i], 'Techno'] = 'pv_'+str(pv_counter)
+            #         if self.solar_cases_select.Techno.iloc[i] == 'solarCollector':
+            #             st_counter = st_counter+1
+            #             self.solar_cases_select.loc[
+            #                 self.solar_cases_select.index[i], 'Techno'] = 'solarCollector_'+str(st_counter)
         return None
 
     def write_cases(self, source):

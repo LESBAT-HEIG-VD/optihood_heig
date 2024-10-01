@@ -177,8 +177,8 @@ class PVT(solph.components.Transformer):
                                                           temp_collector_inlet, delta_temp_n[-1],
                                                irradiance_global, irradiance_diffuse, temp_amb,  pv_efficiency, taualpha,layout)
 
-                self.collectors_heat_dhw = pvtCollectorData_dhw['collectors_heat'] / 1000
-                self.collectors_eta_c_dhw = pvtCollectorData_dhw['eta_c']
+                self.collectors_heat_dhw = (pvtCollectorData_dhw1['collectors_heat'] +pvtCollectorData_dhw2['collectors_heat'] )/2/ 1000
+                self.collectors_eta_c_dhw = (pvtCollectorData_dhw1['eta_c']+pvtCollectorData_dhw2['eta_c'])/2
                 ep_costs = [0, epc]
                 offset = [0.000001, base]
                 if outputs.__len__()>3:
@@ -189,22 +189,10 @@ class PVT(solph.components.Transformer):
                                                               temp_collector_inlet, delta_temp_n[-1],
                                                    irradiance_global, irradiance_diffuse, temp_amb,  pv_efficiency, taualpha,layout)
 
-                    self.collectors_heat_T2 = pvtCollectorData_dhw['collectors_heat'] / 1000
-                    self.collectors_eta_c_T2 = pvtCollectorData_dhw['eta_c']
-                    
-                    
-                    pvtCollectorData_T2 = self.pvtThPrecalc(latitude, longitude, collector_tilt, collector_azimuth, eta_0,
-                                                             a_1, a_2,
-                                                             temp_collector_inlet, delta_temp_n[-1],
-                                                             irradiance_global, irradiance_diffuse, temp_amb, pv_efficiency,
-                                                             taualpha)
-                    self.collectors_eta_c_T2 = (pvtCollectorData_dhw1['eta_c']+pvtCollectorData_dhw2['eta_c'])/2
-                    self.collectors_heat_T2 = (pvtCollectorData_dhw1['collectors_heat']+pvtCollectorData_dhw2['collectors_heat'])/1000/2
-                    
+                    self.collectors_heat_T2 = (pvtCollectorData_T2_1['collectors_heat'] +pvtCollectorData_T2_2['collectors_heat'] )/2/ 1000
+                    self.collectors_eta_c_T2 = (pvtCollectorData_T2_2['eta_c']+pvtCollectorData_T2_1['eta_c'])/2                    
                     ep_costs = [0, 0, epc]
-                    offset = [0.000001, 0.000001, base]
-
-             
+                    offset = [0.000001, 0.000001, base]             
         else:
             pvdata = self.computePvSolarPosition(irradiance_diffuse, irradiance_global, latitude, longitude, collector_azimuth,
                                                collector_tilt, temp_amb,layout)
@@ -288,7 +276,16 @@ class PVT(solph.components.Transformer):
                                                   'space': self.surface_used, 
                                                   'space_el': surface_used_el,
                                                   'roof_area': roof_area}}
-
+            investArgsSH = {'ep_costs': [0],
+                          'minimum': capacityMin,
+                          'maximum': capacityMax,
+                          'nonconvex':True,
+                          'offset':offset[0],
+                          'custom_attributes': {'env_per_capa': env_capa, 
+                                                'space': self.surface_used, 
+                                                'space_el': surface_used_el,
+                                                  'roof_area': roof_area}}
+            
             if outputs.__len__() >= 3:
                 investArgsDHW = {'ep_costs': ep_costs[-1],
                                  'minimum': capacityMin,
@@ -542,13 +539,13 @@ class PVT(solph.components.Transformer):
 
     def getPVT(self, type):
         if type == 'heat_source':
-            return self.__PVTheat_source_sh, self.__PVTheat_source_dhw
+            return self.__PVTheat_source_sh, self.__PVTheat_source_T2, self.__PVTheat_source_dhw
         elif type == 'heat_transformer':
-            return self.__PVTheat_transformer_sh, self.__PVTheat_transformer_dhw
+            return self.__PVTheat_transformer_sh, self.__PVTheat_transformer_T2, self.__PVTheat_transformer_dhw
         elif type == 'el_source':
             return self.__PVTel_source
         elif type == 'excess_heat_sink':
-            return self.__PVT_excessheat_sh, self.__PVT_excessheat_dhw
+            return self.__PVT_excessheat_sh, self.__PVT_excessheat_T2, self.__PVT_excessheat_dhw
         else:
             print("Label not identified...")
             return []
