@@ -59,7 +59,7 @@ if __name__ == '__main__':
     numberOfOptimizations = 7 # ODD NUMBER number of optimizations in multi objective optimization pareto front
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
-    numberOfBuildings = 10
+    numberOfBuildings = 2
     cluster_N = [0]
     merge_opt = [True]
     con_opt = ["Con"]  # ["Con","noCon"]
@@ -82,12 +82,14 @@ if __name__ == '__main__':
     # inputfileName = "scenario_Annual_2_costs_100%_SH35_cluster_HPOnly.xls"
     # inputfileName = "scenario_Annual_10_costs_TES_Final.xls"
     # inputfileName = "scenario_Annual_2_costs_TES.xls"
-    inputFilePath = curDir / ".." / "excels" / "IamLenz"
-    inputfileName = "scenario_IamLenz_10_costs_TES_GSHP_PV_ST_PVT.xls"
+    # inputFilePath = curDir / ".." / "excels" / "IamLenz"
+    inputFilePath = curDir / ".." / "excels" / "pvt_example"
+    # inputfileName = "scenario_IamLenz_10_costs_TES_GSHP_PV_ST_PVT.xls"
+    inputfileName = "scenario_3.xls"
 
     resultFilePath = r"..\results"
     # resultFileName = "results_TES_Final_10bld_allHP_PV_PVT_ST_TES.xlsx"
-    resultFileName = "results_IamLenz_GSHP_PV_PVT_ST_TES.xlsx"
+    resultFileName = "results_scen3.xlsx"
     # resultFileName = "results_TES_env_" + str(clN) + "_TES_allHP_10bld.xlsx"
 
     # create weather file based on coordinates and PVGIS or supplying file to read
@@ -246,7 +248,7 @@ if __name__ == '__main__':
         network.printEnvImpacts()
 
         # save results
-        resultFileName = "results_pareto_mergeTrue_IamLenz_GSHP_PV_PVT_ST_TES" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
+        resultFileName = "results_pareto_mergeTrue_scen3" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
 
         if not os.path.exists(resultFilePath):
             os.makedirs(resultFilePath)
