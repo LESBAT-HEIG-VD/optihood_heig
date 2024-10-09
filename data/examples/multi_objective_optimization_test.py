@@ -5,7 +5,7 @@ try:
 except ImportError:
     plt = None
 import numpy as np
-
+import pathlib as _pl
 ## import energy network class
 # EnergyNetworkIndiv for individual optimization
 # EnergyNetworkGroup for grouped optimization
@@ -75,16 +75,19 @@ if __name__ == '__main__':
     # The number of days belonging to each cluster is defined in the dictionary 'cluster'
 
     """ file management"""
+    curDir = _pl.Path(__file__).resolve().parent
     # define paths for input and result files
-    inputFilePath = r"..\excels\clustering"
+    # inputFilePath = r"..\excels\clustering"
     # inputfileName = "scenario_Annual_1_costs_100%_SH35_cluster_HPOnly.xls"
     # inputfileName = "scenario_Annual_2_costs_100%_SH35_cluster_HPOnly.xls"
-    inputfileName = "scenario_Annual_10_costs_TES_Final.xls"
+    # inputfileName = "scenario_Annual_10_costs_TES_Final.xls"
     # inputfileName = "scenario_Annual_2_costs_TES.xls"
-    # inputfileName = "scenario.xls"
+    inputFilePath = curDir / ".." / "excels" / "IamLenz"
+    inputfileName = "scenario_IamLenz_10_costs_TES_GSHP_PV_ST_PVT.xls"
 
     resultFilePath = r"..\results"
-    resultFileName = "results_TES_Final_10bld.xlsx"
+    # resultFileName = "results_TES_Final_10bld_allHP_PV_PVT_ST_TES.xlsx"
+    resultFileName = "results_IamLenz_GSHP_PV_PVT_ST_TES.xlsx"
     # resultFileName = "results_TES_env_" + str(clN) + "_TES_allHP_10bld.xlsx"
 
     # create weather file based on coordinates and PVGIS or supplying file to read
@@ -243,7 +246,7 @@ if __name__ == '__main__':
         network.printEnvImpacts()
 
         # save results
-        resultFileName = "results_pareto_mergeFalse_Group_" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
+        resultFileName = "results_pareto_mergeTrue_IamLenz_GSHP_PV_PVT_ST_TES" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
 
         if not os.path.exists(resultFilePath):
             os.makedirs(resultFilePath)
@@ -290,7 +293,7 @@ if __name__ == '__main__':
     if not os.path.exists(figureFilePath):
         os.makedirs(figureFilePath)
 
-    figureFileName = f"Pareto_2_AllHP_PV_ST_TES.png"
+    figureFileName = f"Pareto_10_Gas_HP_PV_PVT_TES.png"
 
     plotParetoFront(os.path.join(figureFilePath, figureFileName), costsList, envList)
 

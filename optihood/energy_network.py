@@ -1,20 +1,29 @@
-import numpy as np
-import pandas as pd
-from optihood._helpers import *
-import oemof.solph as solph
-from oemof.tools import logger
 import logging
 import os
+import pathlib as _pl
 import pprint as pp
-from configparser import ConfigParser
+import typing as _tp
 from datetime import datetime, timedelta
+
+import numpy as np
+import oemof.solph as solph
+import pandas as pd
+from oemof.tools import logger
+
+import optihood.IO.writers as _wr
+import optihood.entities as _ent
+
 try:
     import matplotlib.pyplot as plt
 except ImportError:
     plt = None
-from optihood.constraints import *
+
 from optihood.buildings import Building
+from optihood.constraints import *
+from optihood._helpers import *
 from optihood.links import Link
+import optihood.IO.readers as _re
+
 
 class OptimizationProperties:
     """
@@ -57,6 +66,13 @@ class OptimizationProperties:
     def includeCarbonBenefits(self):
         return self._includeCarbonBenefits
 
+
+def get_data_from_df(df: pd.DataFrame, column_name: str):
+    return df[column_name]
+
+
+def get_data_from_excel_file(data: pd.ExcelFile, column_name: str):
+    return data.parse(column_name)
 
 
 class EnergyNetworkClass(solph.EnergySystem):
@@ -113,21 +129,23 @@ class EnergyNetworkClass(solph.EnergySystem):
         super(EnergyNetworkClass, self).__init__(timeindex=timestamp, infer_last_interval=True)
 
     def setFromExcel(self, filePath, numberOfBuildings, clusterSize={}, opt="costs", mergeLinkBuses=False, mergeBuses=None, mergeHeatSourceSink=False, dispatchMode=False, includeCarbonBenefits=False):
-        # does Excel file exist?
-        if not filePath or not os.path.isfile(filePath):
-            logging.error("Excel data file {} not found.".format(filePath))                                                                               
-        if mergeLinkBuses and self._temperatureLevels:
-            logging.error("The options mergeLinkBuses and temperatureLevels should not be set True at the same time. "
-                          "This use case is not supported in the present version of optihood. Only one of "
-                          "mergeLinkBuses and temperatureLevels should be set to True.")
+        self.check_file_path(filePath)
+        self.check_mutually_exclusive_inputs(mergeLinkBuses)
         self._dispatchMode = dispatchMode
         self._optimizationType = opt
         logging.info("Defining the energy network from the excel file: {}".format(filePath))
         data = pd.ExcelFile(filePath)
-        nodesData = self.createNodesData(data, filePath, numberOfBuildings, clusterSize)
+        initial_nodal_data = self.get_nodal_data_from_Excel(data)
+        data.close()
+
+        self.set_using_nodal_data(clusterSize, filePath, includeCarbonBenefits, initial_nodal_data, mergeBuses,
+                                  mergeHeatSourceSink, mergeLinkBuses, numberOfBuildings, opt)
+
+    def set_using_nodal_data(self, clusterSize, filePath, includeCarbonBenefits, initial_nodal_data, mergeBuses,
+                             mergeHeatSourceSink, mergeLinkBuses, numberOfBuildings, opt):
+        nodesData = self.createNodesData(initial_nodal_data, filePath, numberOfBuildings, clusterSize)
         # nodesData["buses"]["excess costs"] = nodesData["buses"]["excess costs indiv"]
         # nodesData["electricity_cost"]["cost"] = nodesData["electricity_cost"]["cost indiv"]
-
         if clusterSize:
             demandProfiles = {}
             for i in range(1, numberOfBuildings + 1):
@@ -154,32 +172,78 @@ class EnergyNetworkClass(solph.EnergySystem):
                 nodesData["natGas_impact"] = natGasImpact
                 nodesData["natGas_cost"] = natGasCost
             nodesData["weather_data"] = weatherData
-        self._convertNodes(nodesData, opt, mergeLinkBuses, mergeBuses, mergeHeatSourceSink, includeCarbonBenefits, clusterSize)
+        self._convertNodes(nodesData, opt, mergeLinkBuses, mergeBuses, mergeHeatSourceSink, includeCarbonBenefits,
+                           clusterSize)
         logging.info("Nodes from Excel file {} successfully converted".format(filePath))
         self.add(*self._nodesList)
         logging.info("Nodes successfully added to the energy network")
 
-    def createNodesData(self, data, filePath, numBuildings, clusterSize):
-        self.__noOfBuildings = numBuildings
-        nodesData = {
-            "buses": data.parse("buses"),
-            "grid_connection": data.parse("grid_connection"),
-            "commodity_sources": data.parse("commodity_sources"),
-            "solar": data.parse("solar"),
-            "transformers": data.parse("transformers"),
-            "demand": data.parse("demand"),
-            "storages": data.parse("storages"),
-            "stratified_storage": data.parse("stratified_storage"),
-            "profiles": data.parse("profiles")
+    def check_mutually_exclusive_inputs(self, mergeLinkBuses):
+        if mergeLinkBuses and self._temperatureLevels:
+            logging.error("The options mergeLinkBuses and temperatureLevels should not be set True at the same time. "
+                          "This use case is not supported in the present version of optihood. Only one of "
+                          "mergeLinkBuses and temperatureLevels should be set to True.")
+
+    @staticmethod
+    def check_file_path(filePath):
+        if not filePath or not os.path.isfile(filePath):
+            logging.error(f"File {filePath} not found.")
+
+    def get_nodal_data_from_df(self, data: pd.DataFrame):
+        nodes_data = self.get_nodal_data(get_data_from_df, data)
+
+        return nodes_data
+
+    def get_nodal_data_from_dict_with_dfs(self, data: dict):
+        """ Facade as the interface is the same as for the DataFrame version. """
+        nodes_data = self.get_nodal_data(get_data_from_df, data)
+
+        return nodes_data
+
+    def get_nodal_data_from_Excel(self, data: pd.ExcelFile):
+        nodes_data = self.get_nodal_data(get_data_from_excel_file, data)
+
+        return nodes_data
+
+    @staticmethod
+    def get_nodal_data(func, data: _tp.Union[pd.ExcelFile, pd.DataFrame, dict]):
+        f""" Uses a specified function to get the nodal data from a specified entry point.
+            e.g.:
+            func = {get_data_from_excel_file}
+            func = {get_data_from_df}            
+        """
+        nodes_data = {
+            _ent.NodeKeys.buses.value: func(data, _ent.NodeKeys.buses.value),
+            _ent.NodeKeys.grid_connection.value: func(data, _ent.NodeKeys.grid_connection.value),
+            _ent.NodeKeys.commodity_sources.value: func(data, _ent.NodeKeys.commodity_sources.value),
+            _ent.NodeKeys.solar.value: func(data, _ent.NodeKeys.solar.value),
+            _ent.NodeKeys.transformers.value: func(data, _ent.NodeKeys.transformers.value),
+            _ent.NodeKeys.demand.value: func(data, _ent.NodeKeys.demand.value),
+            _ent.NodeKeys.storages.value: func(data, _ent.NodeKeys.storages.value),
+            _ent.NodeKeys.stratified_storage.value: func(data, _ent.NodeKeys.stratified_storage.value),
+            _ent.NodeKeys.profiles.value: func(data, _ent.NodeKeys.profiles.value)
         }
+        return nodes_data
+
+    @staticmethod
+    def get_values_from_dataframe(df: pd.DataFrame, identifier: str, identifier_column: str, desired_column: str):
+        f""" Find any {identifier} entries in the {identifier_column} and return the 
+             {desired_column} value of those rows."""
+        row_indices = df[identifier_column] == identifier
+        values = df.loc[row_indices, desired_column].iloc[0]
+        return values
+
+    def createNodesData(self, nodesData, file_or_folder_path, numBuildings, clusterSize):
+        self.__noOfBuildings = numBuildings
+        
         # update stratified_storage index
-        nodesData["stratified_storage"].set_index("label", inplace=True)
+        nodesData[_ent.NodeKeys.stratified_storage.value].set_index(_ent.StratifiedStorageLabels.label.value, inplace=True)
 
         # extract input data from CSVs
-        electricityImpact = nodesData["commodity_sources"].loc[nodesData["commodity_sources"]["label"] == "electricityResource", "CO2 impact"].iloc[0]
-        electricityCost = nodesData["commodity_sources"].loc[nodesData["commodity_sources"]["label"] == "electricityResource", "variable costs"].iloc[0]
-        demandProfilesPath = nodesData["profiles"].loc[nodesData["profiles"]["name"] == "demand_profiles", "path"].iloc[0]
-        weatherDataPath = nodesData["profiles"].loc[nodesData["profiles"]["name"] == "weather_data", "path"].iloc[0]
+        electricityImpact = self.get_values_from_dataframe(nodesData[_ent.NodeKeys.commodity_sources.value], _ent.CommoditySourceTypes.electricityResource.value, _ent.CommoditySourcesLabels.label.value, _ent.CommoditySourcesLabels.CO2_impact.value)
+        electricityCost = nodesData[_ent.NodeKeys.commodity_sources.value].loc[nodesData[_ent.NodeKeys.commodity_sources.value]["label"] == "electricityResource", "variable costs"].iloc[0]
+        demandProfilesPath = nodesData[_ent.NodeKeys.profiles.value].loc[nodesData[_ent.NodeKeys.profiles.value][_ent.ProfileLabels.name.value] == _ent.ProfileTypes.demand.value, _ent.ProfileLabels.path.value].iloc[0]
+        weatherDataPath = nodesData[_ent.NodeKeys.profiles.value].loc[nodesData[_ent.NodeKeys.profiles.value]["name"] == "weather_data", "path"].iloc[0]
 
         if "naturalGasResource" in nodesData["commodity_sources"]["label"].values:
             natGasCost = nodesData["commodity_sources"].loc[nodesData["commodity_sources"]["label"] == "naturalGasResource", "variable costs"].iloc[0]
@@ -224,7 +288,10 @@ class EnergyNetworkClass(solph.EnergySystem):
             nodesData["electricity_impact"] = pd.read_csv(electricityImpact, delimiter=";")
             # set datetime index
             nodesData["electricity_impact"].set_index("timestamp", inplace=True)
-            nodesData["electricity_impact"].index = pd.to_datetime(nodesData["electricity_impact"].index, format='%d.%m.%Y %H:%M')
+            try:
+                nodesData["electricity_impact"].index = pd.to_datetime(nodesData["electricity_impact"].index, format='%d.%m.%Y %H:%M')
+            except:
+                nodesData["electricity_impact"].index = pd.to_datetime(nodesData["electricity_impact"].index, format='%Y-%m-%d %H:%M:%S')    
 
         if type(electricityCost) == np.float64 or type(electricityCost) == np.int64:
             # for constant cost
@@ -246,7 +313,7 @@ class EnergyNetworkClass(solph.EnergySystem):
                 nodesData["electricity_cost"].index = pd.to_datetime(nodesData["electricity_cost"].index, format='%Y-%m-%d %H:%M:%S')    
 
         if "naturalGasResource" in nodesData["commodity_sources"]["label"].values:
-            if type(natGasImpact) == float or (natGasImpact.split('.')[0].replace('-','').isdigit() and natGasImpact.split('.')[1].replace('-','').isdigit()):
+            if isinstance(natGasImpact, (float, np.float64)) or (natGasImpact.split('.')[0].replace('-','').isdigit() and natGasImpact.split('.')[1].replace('-','').isdigit()):
                 # for constant impact
                 natGasImpactValue = float(natGasImpact)
                 logging.info("Constant value for natural gas impact")
@@ -328,7 +395,7 @@ class EnergyNetworkClass(solph.EnergySystem):
                     nodesData["building_model"][i + 1][param] = float(bmParamers[bmParamers["Building Number"] == (i+1)][param].iloc[0])
         else:
             logging.info("Building model either not selected or invalid string value entered")
-        logging.info("Data from Excel file {} imported.".format(filePath))
+        logging.info(f"Data from file {file_or_folder_path} imported.")
         return nodesData
 
     def _checkStorageTemperatureGradient(self, temp_c):
@@ -423,21 +490,44 @@ class EnergyNetworkClass(solph.EnergySystem):
             for key in data['solar'].loc[data['solar']['building']==i,:]['label']:                
                 if 'pv_' in key:
                     pv_counter+=1
-                
+                    flag='multi'
                 if 'pvt_' in key:
                     pvt_counter+=1
+                    flag='multi'
                 if 'solarCollector_' in key:
                     st_counter+=1
+                    flag='multi'
+                if key == 'pv':
+                    pv_counter=-1
+                    flag='single'
+                if key == 'pvt':
+                    pvt_counter=-1
+                    flag='single'
+                if key == 'solarCollector' :
+                    st_counter=-1
+                    flag='single'
             data_view=data['solar'].loc[data['solar']['building']==i,:]        
-            for k in range(1,pv_counter+1):
-                data_pv=data_view.loc[data_view.label=='pv_' + str(k),:]
-                b.addPV(data_pv, data["weather_data"], opt, self._dispatchMode)            
-            for k in range(1,pvt_counter+1):
-                data_pvt=data_view.loc[data_view.label=='pvt_' + str(k),:]
-                b.addPVT(data_pvt, data["weather_data"], opt, mergeLinkBuses, self._dispatchMode)
-            for k in range(1,st_counter+1):
-                data_st=data_view.loc[data_view.label=='solarCollector_' + str(k),:]
-                b.addSolar(data_st, data["weather_data"], opt, mergeLinkBuses, self._dispatchMode, self._temperatureLevels)                
+            if flag=='multi':
+                for k in range(1,pv_counter+1):
+                    data_pv=data_view.loc[data_view.label=='pv_' + str(k),:]
+                    b.addPV(data_pv, data["weather_data"], opt, self._dispatchMode)            
+                for k in range(1,pvt_counter+1):
+                    data_pvt=data_view.loc[data_view.label=='pvt_' + str(k),:]
+                    b.addPVT(data_pvt, data["weather_data"], opt, mergeLinkBuses, self._dispatchMode)
+                for k in range(1,st_counter+1):
+                    data_st=data_view.loc[data_view.label=='solarCollector_' + str(k),:]
+                    b.addSolar(data_st, data["weather_data"], opt, mergeLinkBuses, self._dispatchMode, self._temperatureLevels)                
+            else:
+                if pv_counter==-1:
+                    data_pv=data_view.loc[data_view.label=='pv',:]
+                    b.addPV(data_pv, data["weather_data"], opt, self._dispatchMode)            
+                if pvt_counter==-1:
+                    data_pvt=data_view.loc[data_view.label=='pvt',:]
+                    b.addPVT(data_pvt, data["weather_data"], opt, mergeLinkBuses, self._dispatchMode)
+                if st_counter==-1:
+                    data_st=data_view.loc[data_view.label=='solarCollector',:]
+                    b.addSolar(data_st, data["weather_data"], opt, mergeLinkBuses, self._dispatchMode, self._temperatureLevels)                
+
 
             
             self._nodesList.extend(b.getNodesList())
@@ -507,6 +597,9 @@ class EnergyNetworkClass(solph.EnergySystem):
         # constraint on PVT capacity if PVT technology is selected
         if any("pvt" in n.label for n in self.nodes):
             self._optimizationModel = PVTElectricalThermalCapacityConstraint(self._optimizationModel, numberOfBuildings)
+        if any("solarCollector" in n.label for n in self.nodes):
+            self._optimizationModel = STThermalCapacityConstraint(self._optimizationModel, numberOfBuildings)
+        
         # constraint on storage content for clustering
         """if clusterSize:
             self._optimizationModel = dailySHStorageConstraint(self._optimizationModel)"""
@@ -1056,8 +1149,8 @@ class EnergyNetworkClass(solph.EnergySystem):
                 investSH = capacitiesInvestedTransformers["GasBoiler__" + buildingLabel, shOutputLabel + buildingLabel]
                 if investSH > 0.05:
                     print("Invested in {:.1f} kW GasBoiler.".format(investSH))
-            if ("heat_solarCollector__" + buildingLabel, "solarConnectBus__" + buildingLabel) in capacitiesInvestedTransformers:
-                invest = capacitiesInvestedTransformers[("heat_solarCollector__" + buildingLabel, "solarConnectBus__" + buildingLabel)]
+            if ("heatSource_SHsolarCollector__" + buildingLabel, "solarConnectBusSH__" + buildingLabel) in capacitiesInvestedTransformers:
+                invest = capacitiesInvestedTransformers[("heatSource_SHsolarCollector__" + buildingLabel, "solarConnectBusSH__" + buildingLabel)]
                 if invest > 0.05:
                     print("Invested in {:.1f} m² SolarCollector.".format(invest))
             if ("pv__" + buildingLabel, "electricityProdBus__" + buildingLabel) in capacitiesInvestedTransformers:
@@ -1261,317 +1354,55 @@ class EnergyNetworkClass(solph.EnergySystem):
                 capacitiesTransformersBuilding = pd.DataFrame.from_dict(capacitiesTransformers, orient='index')
                 capacitiesTransformersBuilding.to_excel(writer, sheet_name="capTransformers__" + buildingLabel)
 
-class EnergyNetworkIndiv(EnergyNetworkClass):
-    def createScenarioFile(self, configFilePath, excelFilePath, building, numberOfBuildings=1):
-        """function to create the input excel file from a config file
-        saves the generated excel file at the path given by excelFilePath"""
-        config = ConfigParser()
-        config.read(configFilePath)
-        configData = {}
-        excelData= {}
-        columnNames = {'commodity_sources': ['label', 'building', 'to', 'variable costs', 'CO2 impact', 'active'],# column names are defined for each sheet (key of dict) in the excel file
-                       'solar': ['label', 'building', 'from', 'to', 'connect', 'electrical_consumption', 'peripheral_losses', 'latitude', 'longitude', 'tilt', 'azimuth', 'eta_0', 'a_1', 'a_2', 'temp_collector_inlet', 'delta_temp_n', 'capacity_max', 'capacity_min', 'lifetime', 'maintenance', 'installation', 'planification', 'invest_base', 'invest_cap', 'heat_impact', 'elec_impact', 'impact_cap'],
-                       'demand': ['label', 'building', 'active', 'from', 'fixed', 'nominal value', 'building model'],
-                       'transformers': ['label', 'building', 'active', 'from', 'to', 'efficiency', 'capacity_DHW', 'capacity_SH', 'capacity_el', 'capacity_min', 'lifetime', 'maintenance', 'installation', 'planification', 'invest_base', 'invest_cap', 'heat_impact', 'elec_impact', 'impact_cap'],
-                       'storages': ['label', 'building', 'active', 'from', 'to', 'efficiency inflow', 'efficiency outflow', 'initial capacity', 'capacity min', 'capacity max', 'capacity loss', 'lifetime', 'maintenance', 'installation', 'planification', 'invest_base', 'invest_cap', 'heat_impact', 'elec_impact', 'impact_cap'],
-                       'stratified_storage': ['label', 'diameter', 'temp_h', 'temp_c', 'temp_env', 'inflow_conversion_factor', 'outflow_conversion_factor', 's_iso', 'lamb_iso', 'alpha_inside', 'alpha_outside']
-                       }
-        buses = {'naturalgasresource': ['naturalGasBus', '', ''], 'electricityresource': ['gridBus', '', ''], 'solarcollector': ['dhwStorageBus', 'electricityInBus', 'solarConnectBus'],    # [to, from, connect] columns in the excel file
-                 'pv': ['electricityProdBus', '', ''], 'electricitydemand': ['', 'electricityInBus', ''], 'spaceheatingdemand': ['', 'shDemandBus', ''],
-                 'domestichotwaterdemand': ['', 'domesticHotWaterBus', ''], 'gasboiler': ['shSourceBus,dhwStorageBus', 'naturalGasBus', ''], 'electricrod': ['shSourceBus,dhwStorageBus', 'electricityInBus', ''],
-                 'chp': ['electricityProdBus,shSourceBus,dhwStorageBus', 'naturalGasBus', ''], 'ashp': ['shSourceBus,dhwStorageBus', 'electricityInBus', ''], 'gshp': ['shSourceBus,dhwStorageBus', 'electricityInBus', ''],
-                 'electricalstorage': ['electricityBus', 'electricityProdBus', ''], 'shstorage': ['spaceHeatingBus', 'shSourceBus', ''], 'dhwstorage': ['domesticHotWaterBus', 'dhwStorageBus', '']}
-        sheetToSection = {'commodity_sources':'CommoditySources', 'solar':'Solar', 'demand':'Demands', 'transformers':'Transformers', 'storages':'Storages', 'stratified_storage':'StratifiedStorage'}
-        sections = config.sections()
-        profiles = pd.DataFrame(columns=['name', 'path'])
-        updatedLabels = {'weatherpath':'weather_data', 'path':'demand_profiles', 'ashp':'HP', 'gshp':'GWHP', 'electricityresource':'electricityResource', 'naturalgasresource':'naturalGasResource', 'chp':'CHP', 'gasboiler':'GasBoiler', 'electricrod':'ElectricRod', 'pv':'pv', 'solarcollector':'solarCollector', 'electricalstorage':'electricalStorage', 'shstorage':'shStorage', 'dhwstorage':'dhwStorage', 'stratifiedstorage':'StratifiedStorage'}
-        temp_h = {}     # to store temp_h values for stratified storage parameters sheet
-        FeedinTariff = 0
-        for section in config.sections():
-            configData[section]=config.items(section)
-        configData = {k.lower(): v for k, v in configData.items()}
-        for sheet in columnNames:
-            excelData[sheet] = pd.DataFrame(columns=columnNames[sheet])
-            if sheet == 'stratified_storage':
-                newRow = pd.DataFrame(columns=columnNames[sheet])
-                newRow.at[0, 'label'] = list(temp_h)[0]
-                newRow.at[0, 'temp_h'] = list(temp_h.values())[0]
-                newRow.at[1, 'label'] = list(temp_h)[1]
-                newRow.at[1, 'temp_h'] = list(temp_h.values())[1]
-            for item in configData[sheetToSection[sheet].lower()]:
-                type = item[0]
-                if item[1] in ['True', 'False']:  # defines whether or not a component is to be added
-                    if item[1] == 'True':
-                        newRow = pd.DataFrame(columns=columnNames[sheet])
-                        newRow.at[0,'label']=updatedLabels[item[0]]
-                        newRow.at[0,'active']=int(bool(item[1]=='True'))
-                        # sheet specific options
-                        cols = newRow.columns
-                        if 'building' in cols:
-                            newRow.at[0,'building']=1
-                        if 'to' in cols:
-                            newRow.at[0,'to'] = buses[type][0]
-                        if 'from' in cols:
-                            newRow.at[0,'from'] = buses[type][1]
-                        if 'connect' in cols:
-                            newRow.at[0,'connect'] = buses[type][2]
-                        params = configData[type]
-                        if sheet == 'commodity_sources':
-                            index = [x for x, y in enumerate(params) if y[0] == 'cost'][0]
-                            newRow.at[0,'variable costs'] = params[index][1]
-                            index = [x for x, y in enumerate(params) if y[0] == 'impact'][0]
-                            newRow.at[0,'CO2 impact'] = params[index][1]
-                            if type=='electricityresource':
-                                index = [x for x, y in enumerate(params) if y[0] == 'feedintariff'][0]
-                                FeedinTariff = -float(params[index][1])
-                        else:
-                            for p in params:
-                                if sheet=='transformers' and p[0] == 'capacity_max':
-                                    newRow.at[0, 'capacity_DHW'] = p[1]
-                                    newRow.at[0, 'capacity_SH'] = p[1]
-                                    if updatedLabels[item[0]]=='CHP':
-                                        newRow.at[0, 'capacity_el'] = str(round(float(p[1])*float(newRow.at[0, 'efficiency'].split(',')[0])/float(newRow.at[0, 'efficiency'].split(',')[1]),0))
-                                elif sheet=='storages' and p[0] == 'temp_h':
-                                    temp_h[newRow.at[0,'label']] = p[1]
-                                else:
-                                    newRow.at[0,p[0]] = p[1]
-                        excelData[sheet] = pd.concat([excelData[sheet], newRow])
-                elif type=='path':       # demand path
-                    buildingFolder = [i[1] for i in configData['demands'] if i[0] == 'folders'][0].split(',')[building]
-                    buildingPath = item[1]+'\\'+ buildingFolder
-                    profiles = pd.concat([profiles, pd.DataFrame({'name': [updatedLabels[type]], 'path': [buildingPath]})])
-                elif 'path' in type:     # weather path
-                    profiles = pd.concat([profiles, pd.DataFrame({'name':[updatedLabels[type]], 'path':[item[1]]})])
-                elif sheet == 'demand' and type!='folders':
-                    newRow = pd.DataFrame(columns=columnNames[sheet])
-                    for d in ['electricityDemand', 'spaceHeatingDemand', 'domesticHotWaterDemand']:
-                        newRow.at[0, 'label'] = d
-                        newRow.at[0, 'from'] = buses[d.lower()][1]
-                        if d == 'spaceHeatingDemand' and item[1]==0:
-                            newRow.at[0, 'fixed'] = item[1]
-                            newRow.at[0, 'building model'] = 'Yes'
-                        else:
-                            newRow.at[0, 'fixed'] = 1
-                        excelData[sheet] = pd.concat([excelData[sheet], newRow])
-                    excelData[sheet]['building'] = 1
-                    excelData[sheet]['active'] = 1
-                    excelData[sheet]['nominal value'] = 1
-                elif sheet == 'stratified_storage':
-                    newRow.at[0,type] = item[1]
-                    newRow.at[1,type] = item[1]
-                else: # common parameters of all the components of that section
-                    if type!='folders':
-                        excelData[sheet][type] = item[1]
-            if sheet == 'stratified_storage':
-                excelData[sheet] = pd.concat([excelData[sheet], newRow])
-        excelData['profiles'] = profiles
-        excelData['grid_connection'] = pd.DataFrame({'label':['gridElectricity','electricitySource','producedElectricity','shSource','spaceHeating'], 'building':[1,1,1,1,1], 'from':['gridBus','electricityProdBus','electricityBus','shSourceBus','spaceHeatingBus'], 'to':['electricityInBus','electricityBus','electricityInBus','spaceHeatingBus','shDemandBus'], 'efficiency':[1,1,1,1,1]})
+    def set_from_csv(self, input_data_dir: _pl.Path, nr_of_buildings: int, clusterSize={}, opt: str = "costs",
+                   mergeLinkBuses: bool = False, mergeBuses: _tp.Optional[_tp.Sequence[str]] = None,
+                   mergeHeatSourceSink: bool = False, dispatchMode: bool = False, includeCarbonBenefits: bool = False):
+        self.check_dir_path(input_data_dir)
+        self.check_mutually_exclusive_inputs(mergeLinkBuses)
+        self._dispatchMode = dispatchMode
+        self._optimizationType = opt
+        logging.info(f"Defining the energy network from the input files: {input_data_dir}")
+    
+        csvReader = _re.CsvScenarioReader(input_data_dir)
+        initial_nodal_data = csvReader.read_scenario()
+        self.set_using_nodal_data(clusterSize, input_data_dir, includeCarbonBenefits, initial_nodal_data, mergeBuses,
+                                  mergeHeatSourceSink, mergeLinkBuses, nr_of_buildings, opt)
+    
+    @staticmethod
+    def check_dir_path(dir_path: _pl.Path):
+        if not dir_path or not os.path.isdir(dir_path):
+            logging.error(f"Directory {dir_path} not found.")
 
-        df = pd.DataFrame(columns=['buses'])
-        for sheet, data in excelData.items():
-            for col in ['from', 'to', 'connect']:
-                if col in data.columns:
-                    newBuses = pd.DataFrame(columns=['buses'])
-                    newBuses['buses'] = data[col].values
-                    df = pd.concat([df, newBuses])
-        df = df.assign(buses=df.buses.str.split(',')).explode('buses')['buses'].unique()
-        df = df[df != '']
-        excelData['buses'] = pd.DataFrame(columns=['label', 'building', 'excess', 'excess costs', 'active'])
-        for index in range(len(df)):
-            excelData['buses'].at[index,'label'] = df[index]
-            if df[index] == 'electricityBus' and FeedinTariff!=0:
-                excelData['buses'].at[index,'excess'] = 1
-                excelData['buses'].at[index, 'excess costs'] = FeedinTariff
-        excelData['buses']['building'] = 1
-        excelData['buses']['active'] = 1
-        excelData['buses'].loc[excelData['buses']['excess']!=1,'excess'] = 0
-        for sheet, data in excelData.items():
-            if 'building' in data.columns:
-                buildingNo = [i for i in range(1, numberOfBuildings + 1)]* len(excelData[sheet].index)
-                excelData[sheet] = pd.DataFrame(np.repeat(data.values, numberOfBuildings, axis=0), columns=data.columns)
-                excelData[sheet]['building'] = buildingNo
-        with pd.ExcelWriter(excelFilePath, engine='xlwt') as writer:
-            for sheet, data in excelData.items():
-                data.to_excel(writer, sheet_name=sheet, index=False)
-            writer.save()
-            writer.close()
+
+class EnergyNetworkIndiv(EnergyNetworkClass):
+    # # sunsetted, please use parent instead
+    # def createScenarioFile(self, configFilePath, excelFilePath, building, numberOfBuildings=1):
+    #     # use new function instead
+    #     # tell user it is being sunsetted.
+    def __init__(self, timestamp):
+        warnings.warn(f'"EnergyNetworkIndiv" will be sunsetted. Please use {__name__}.{EnergyNetworkClass.__name__} instead.')
+        super().__init__(timestamp)
+
+    @staticmethod
+    def createScenarioFile(configFilePath, excelFilePath, building, numberOfBuildings):
+        warnings.warn(f'"EnergyNetworkIndiv.createScenarioFile" will be sunsetted. Please use '
+                      f'{_wr.__name__}.{_wr.ScenarioFileWriterExcel.__name__} or '
+                      f'{_wr.__name__}.{_wr.ScenarioFileWriterCSV} instead.')
+
+        scenarioFileWriter = _wr.ScenarioFileWriterExcel(configFilePath, building_nrs=building, version="individual")
+        scenarioFileWriter.write(excelFilePath)
 
 
 class EnergyNetworkGroup(EnergyNetworkClass):
-    def createScenarioFile(self, configFilePath, excelFilePath, numberOfBuildings):
-        """function to create the input excel file from a config file
-        saves the generated excel file at the path given by excelFilePath"""
-        config = ConfigParser()
-        config.read(configFilePath)
-        configData = {}
-        excelData = {}
-        columnNames = {'commodity_sources': ['label', 'building', 'to', 'variable costs', 'CO2 impact', 'active'],
-                       # column names are defined for each sheet (key of dict) in the excel file
-                       'solar': ['label', 'building', 'from', 'to', 'connect', 'electrical_consumption',
-                                 'peripheral_losses', 'latitude', 'longitude', 'tilt', 'azimuth', 'eta_0', 'a_1', 'a_2',
-                                 'temp_collector_inlet', 'delta_temp_n', 'capacity_max', 'capacity_min', 'lifetime',
-                                 'maintenance', 'installation', 'planification', 'invest_base', 'invest_cap',
-                                 'heat_impact', 'elec_impact', 'impact_cap'],
-                       'demand': ['label', 'building', 'active', 'from', 'fixed', 'nominal value', 'building model'],
-                       'transformers': ['label', 'building', 'active', 'from', 'to', 'efficiency', 'capacity_DHW',
-                                        'capacity_SH', 'capacity_el', 'capacity_min', 'lifetime', 'maintenance',
-                                        'installation', 'planification', 'invest_base', 'invest_cap', 'heat_impact',
-                                        'elec_impact', 'impact_cap'],
-                       'storages': ['label', 'building', 'active', 'from', 'to', 'efficiency inflow',
-                                    'efficiency outflow', 'initial capacity', 'capacity min', 'capacity max',
-                                    'capacity loss', 'lifetime', 'maintenance', 'installation', 'planification',
-                                    'invest_base', 'invest_cap', 'heat_impact', 'elec_impact', 'impact_cap'],
-                       'stratified_storage': ['label', 'diameter', 'temp_h', 'temp_c', 'temp_env',
-                                              'inflow_conversion_factor', 'outflow_conversion_factor', 's_iso',
-                                              'lamb_iso', 'alpha_inside', 'alpha_outside', 'u_value', 'rho', 'c'],
-                       'links': ['label', 'active', 'efficiency', 'invest_base', 'invest_cap', 'investment']
-                       }
-        buses = {'naturalgasresource': ['naturalGasBus', '', ''], 'electricityresource': ['gridBus', '', ''],
-                 'solarcollector': ['dhwStorageBus', 'electricityInBus', 'solarConnectBus'],
-                 # [to, from, connect] columns in the excel file
-                 'pv': ['electricityProdBus', '', ''], 'electricitydemand': ['', 'electricityInBus', ''],
-                 'spaceheatingdemand': ['', 'shDemandBus', ''],
-                 'domestichotwaterdemand': ['', 'dhwDemandBus', ''],
-                 'gasboiler': ['shSourceBus,dhwStorageBus', 'naturalGasBus', ''],
-                 'electricrod': ['shSourceBus,dhwStorageBus', 'electricityInBus', ''],
-                 'chp': ['electricityProdBus,shSourceBus,dhwStorageBus', 'naturalGasBus', ''],
-                 'ashp': ['shSourceBus,dhwStorageBus', 'electricityInBus', ''],
-                 'gshp': ['shSourceBus,dhwStorageBus', 'electricityInBus', ''],
-                 'electricalstorage': ['electricityBus', 'electricityProdBus', ''],
-                 'shstorage': ['spaceHeatingBus', 'shSourceBus', ''],
-                 'dhwstorage': ['domesticHotWaterBus', 'dhwStorageBus', '']}
-        sheetToSection = {'commodity_sources': 'CommoditySources', 'solar': 'Solar', 'demand': 'Demands',
-                          'transformers': 'Transformers', 'storages': 'Storages',
-                          'stratified_storage': 'StratifiedStorage', 'links':'Links'}
-        sections = config.sections()
-        profiles = pd.DataFrame(columns=['name', 'path'])
-        updatedLabels = {'weatherpath': 'weather_data', 'path': 'demand_profiles', 'ashp': 'HP', 'gshp': 'GWHP',
-                         'electricityresource': 'electricityResource', 'naturalgasresource': 'naturalGasResource',
-                         'chp': 'CHP', 'gasboiler': 'GasBoiler', 'electricrod': 'ElectricRod', 'pv': 'pv',
-                         'solarcollector': 'solarCollector', 'electricalstorage': 'electricalStorage',
-                         'shstorage': 'shStorage', 'dhwstorage': 'dhwStorage', 'stratifiedstorage': 'StratifiedStorage',
-                         'ellink': 'electricityLink', 'shlink': 'shLink', 'dhwlink': 'dhwLink'}
-        efficiencyLinks = {'ellink': 0.9999, 'shlink': 0.9, 'dhwlink': 0.9}
-        temp_h = {}  # to store temp_h values for stratified storage parameters sheet
-        FeedinTariff = 0
-        for section in config.sections():
-            configData[section] = config.items(section)
-        configData = {k.lower(): v for k, v in configData.items()}
-        for sheet in columnNames:
-            excelData[sheet] = pd.DataFrame(columns=columnNames[sheet])
-            if sheet == 'stratified_storage':
-                newRow = pd.DataFrame(columns=columnNames[sheet])
-                newRow.at[0, 'label'] = list(temp_h)[0]
-                newRow.at[0, 'temp_h'] = list(temp_h.values())[0]
-                newRow.at[1, 'label'] = list(temp_h)[1]
-                newRow.at[1, 'temp_h'] = list(temp_h.values())[1]
-                if len(list(temp_h))>2:
-                    newRow.at[2, 'label'] = list(temp_h)[2]
-                    newRow.at[2, 'temp_h'] = list(temp_h.values())[1]
-            for item in configData[sheetToSection[sheet].lower()]:
-                type = item[0]
-                if item[1] in ['True', 'False']:  # defines whether or not a component is to be added
-                    if item[1] == 'True':
-                        newRow = pd.DataFrame(columns=columnNames[sheet])
-                        newRow.at[0, 'label'] = updatedLabels[item[0]]
-                        newRow.at[0, 'active'] = int(bool(item[1] == 'True'))
-                        # sheet specific options
-                        cols = newRow.columns
-                        if 'building' in cols:
-                            newRow.at[0, 'building'] = 1
-                        if 'to' in cols:
-                            newRow.at[0, 'to'] = buses[type][0]
-                        if 'from' in cols:
-                            newRow.at[0, 'from'] = buses[type][1]
-                        if 'connect' in cols:
-                            newRow.at[0, 'connect'] = buses[type][2]
-                        if type in ['shlink', 'dhwlink']:
-                            params = configData['thermallink']
-                        else:
-                            params = configData[type]
-                        if sheet == 'commodity_sources':
-                            index = [x for x, y in enumerate(params) if y[0] == 'cost'][0]
-                            newRow.at[0, 'variable costs'] = params[index][1]
-                            index = [x for x, y in enumerate(params) if y[0] == 'impact'][0]
-                            newRow.at[0, 'CO2 impact'] = params[index][1]
-                            if type == 'electricityresource':
-                                index = [x for x, y in enumerate(params) if y[0] == 'feedintariff'][0]
-                                FeedinTariff = -float(params[index][1])
-                        else:
-                            if sheet == 'links':
-                                if not [x for x, y in enumerate(params) if y[0] == 'efficiency']:
-                                    newRow.at[0, 'efficiency'] = efficiencyLinks[type]
-                                newRow.at[0, 'investment'] = 1
-                            for p in params:
-                                if sheet == 'transformers' and p[0] == 'capacity_max':
-                                    newRow.at[0, 'capacity_DHW'] = p[1]
-                                    newRow.at[0, 'capacity_SH'] = p[1]
-                                    if updatedLabels[item[0]]=='CHP':
-                                        newRow.at[0, 'capacity_el'] = str(round(float(p[1])*float(newRow.at[0, 'efficiency'].split(',')[0])/float(newRow.at[0, 'efficiency'].split(',')[1]),0))
-                                elif sheet == 'storages' and p[0] == 'temp_h':
-                                    temp_h[newRow.at[0, 'label']] = p[1]
-                                else:
-                                    newRow.at[0, p[0]] = p[1]
-                        excelData[sheet] = pd.concat([excelData[sheet], newRow])
-                elif 'path' in type:  # weather path or demand path
-                    profiles = pd.concat([profiles, pd.DataFrame({'name': [updatedLabels[type]], 'path': [item[1]]})])
-                elif sheet == 'demand':
-                    newRow = pd.DataFrame(columns=columnNames[sheet])
-                    for d in ['electricityDemand', 'spaceHeatingDemand', 'domesticHotWaterDemand']:
-                        newRow.at[0, 'label'] = d
-                        newRow.at[0, 'from'] = buses[d.lower()][1]
-                        if d == 'spaceHeatingDemand' and item[1] == 0:
-                            newRow.at[0, 'fixed'] = item[1]
-                            newRow.at[0, 'building model'] = 'Yes'
-                        else:
-                            newRow.at[0, 'fixed'] = 1
-                        excelData[sheet] = pd.concat([excelData[sheet], newRow])
-                    excelData[sheet]['building'] = 1
-                    excelData[sheet]['active'] = 1
-                    excelData[sheet]['nominal value'] = 1
-                elif sheet == 'stratified_storage':
-                    newRow.at[0, type] = item[1]
-                    newRow.at[1, type] = item[1]
-                else:  # common parameters of all the components of that section
-                    excelData[sheet][type] = item[1]
-            if sheet == 'stratified_storage':
-                excelData[sheet] = pd.concat([excelData[sheet], newRow])
-        excelData['profiles'] = profiles
-        excelData['grid_connection'] = pd.DataFrame(
-            {'label': ['gridElectricity', 'electricitySource', 'producedElectricity', 'domesticHotWater', 'shSource', 'spaceHeating'],
-             'building': [1, 1, 1, 1, 1, 1],
-             'from': ['gridBus', 'electricityProdBus', 'electricityBus', 'domesticHotWaterBus', 'shSourceBus', 'spaceHeatingBus'],
-             'to': ['electricityInBus', 'electricityBus', 'electricityInBus', 'dhwDemandBus', 'spaceHeatingBus', 'shDemandBus'],
-             'efficiency': [1, 1, 1, 1, 1, 1]})
+    @staticmethod
+    def createScenarioFile(configFilePath, excelFilePath, numberOfBuildings):
+        warnings.warn(f'"EnergyNetworkGroup.createScenarioFile" will be sunsetted. Please use '
+                      f'{_wr.__name__}.{_wr.ScenarioFileWriterExcel.__name__} or '
+                      f'{_wr.__name__}.{_wr.ScenarioFileWriterCSV} instead.')
 
-        df = pd.DataFrame(columns=['buses'])
-        for sheet, data in excelData.items():
-            for col in ['from', 'to', 'connect']:
-                if col in data.columns:
-                    newBuses = pd.DataFrame(columns=['buses'])
-                    newBuses['buses'] = data[col].values
-                    df = pd.concat([df, newBuses])
-        df = df.assign(buses=df.buses.str.split(',')).explode('buses')['buses'].unique()
-        df = df[df != '']
-        excelData['buses'] = pd.DataFrame(columns=['label', 'building', 'excess', 'excess costs', 'active'])
-        for index in range(len(df)):
-            excelData['buses'].at[index, 'label'] = df[index]
-            if df[index] == 'electricityBus' and FeedinTariff != 0:
-                excelData['buses'].at[index, 'excess'] = 1
-                excelData['buses'].at[index, 'excess costs'] = FeedinTariff
-        excelData['buses']['building'] = 1
-        excelData['buses']['active'] = 1
-        excelData['buses'].loc[excelData['buses']['excess'] != 1, 'excess'] = 0
-        for sheet, data in excelData.items():
-            if 'building' in data.columns:
-                buildingNo = [i for i in range(1, numberOfBuildings + 1)] * len(excelData[sheet].index)
-                excelData[sheet] = pd.DataFrame(np.repeat(data.values, numberOfBuildings, axis=0), columns=data.columns)
-                excelData[sheet]['building'] = buildingNo
-        with pd.ExcelWriter(excelFilePath, engine='xlwt') as writer:
-            for sheet, data in excelData.items():
-                data.to_excel(writer, sheet_name=sheet, index=False)
-            # writer.save()
-            # writer.close()
+        scenarioFileWriter = _wr.ScenarioFileWriterExcel(configFilePath, nr_of_buildings=numberOfBuildings,
+                                                         version="grouped")
+        scenarioFileWriter.write(excelFilePath)
 
     def setFromExcel(self, filePath, numberOfBuildings, clusterSize={}, opt="costs", mergeLinkBuses=False, mergeBuses=None, mergeHeatSourceSink=False, dispatchMode=False, includeCarbonBenefits=False):
         # does Excel file exist?
@@ -1581,7 +1412,9 @@ class EnergyNetworkGroup(EnergyNetworkClass):
         self._dispatchMode = dispatchMode
         data = pd.ExcelFile(filePath)
         self._optimizationType = opt
-        nodesData = self.createNodesData(data, filePath, numberOfBuildings, clusterSize)
+        initial_nodal_data = self.get_nodal_data_from_Excel(data)
+        # data.close()
+        nodesData = self.createNodesData(initial_nodal_data, filePath, numberOfBuildings, clusterSize)
         # nodesData["buses"]["excess costs"] = nodesData["buses"]["excess costs group"]
         # nodesData["electricity_cost"]["cost"] = nodesData["electricity_cost"]["cost group"]
 

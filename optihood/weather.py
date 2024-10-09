@@ -106,6 +106,11 @@ class weather:
     
     
     def elec(self,profile_elec="Tarif"):
+        try: 
+            self.COP_HP=float(self.df_transf.loc[(self.df_transf.building==1) & (self.df_transf.label=='HP'),'efficiency'].values[0])
+        except:
+            self.COP_HP=3    
+
         self.demand_elec_tot=self.agg_demand.electricityDemand+ \
             (self.agg_demand.spaceHeatingDemand+
             self.agg_demand.domesticHotWaterDemand)/self.COP_HP
@@ -423,8 +428,14 @@ class weather:
             tot_demand = self.load_bld_demand(bld)
             heat_demand = tot_demand.loc[
                 :, 'spaceHeatingDemand']+tot_demand.loc[:, 'domesticHotWaterDemand']
-            self.COP_HP=float(self.df_transf.loc[(self.df_transf.building==bld) & (self.df_transf.label=='HP'),'efficiency'].values[0])
-            self.COP_GWHP=float(self.df_transf.loc[(self.df_transf.building==bld) & (self.df_transf.label=='GWHP'),'efficiency'].values[0])
+            try: 
+                self.COP_HP=float(self.df_transf.loc[(self.df_transf.building==bld) & (self.df_transf.label=='HP'),'efficiency'].values[0])
+            except:
+                self.COP_HP=2.6    
+            try: 
+                self.COP_GWHP=float(self.df_transf.loc[(self.df_transf.building==bld) & (self.df_transf.label=='GWHP'),'efficiency'].values[0])
+            except:
+                self.COP_GWHP=4.5
             # if self.df_transf.loc[(self.df_transf['building']==bld) & (self.df_transf['label']=='HP'),'active'].any()==1:
             #     elec_demand = tot_demand.loc[:, 'electricityDemand']+ heat_demand / COP_HP
             # elif self.df_transf.loc[(self.df_transf['building']==bld) & (self.df_transf['label']=='GWHP'),'active'].any()==1:
@@ -732,14 +743,15 @@ class weather:
                         
                    
                         if tec == 'pv' or tec == 'pvt':
-                            select_prov=np.vstack([select_prov,select.loc[select['ICPe'].idxmax(), :]])
+                            # select_prov=np.vstack([select_prov,select.loc[select['ICPe'].idxmax(), :]])spec_prod_e
+                            select_prov=np.vstack([select_prov,select.loc[select['spec_prod_e'].idxmax(), :]])
                             # self.solar_cases_select = pd.concat([self.solar_cases_select,
                             #                                      select.loc[select['ICPe'].idxmax(), :]], axis=1)
                             
                         else:
                             # self.solar_cases_select = pd.concat([self.solar_cases_select,
                             #                                      select.loc[select['ICPth'].idxmax(), :]], axis=1)
-                            select_prov=np.vstack([select_prov,select.loc[select['ICPth'].idxmax(), :]])
+                            select_prov=np.vstack([select_prov,select.loc[select['spec_prod_th'].idxmax(), :]])
                             # self.solar_cases_select = self.solar_cases_select.append(
                             #     select.loc[select['ICPth'].idxmax(), :])
                         
