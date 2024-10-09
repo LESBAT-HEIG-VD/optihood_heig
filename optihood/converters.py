@@ -29,16 +29,16 @@ class SolarCollector:
                 self.collectors_eta_c.append(flatPlateCollectorData['eta_c'])
                 self.collectors_heat[connector] = flatPlateCollectorData['collectors_heat'] / 1000  # kWh per m²
             else:
-                flatPlateCollectorData = []
-                for i in range(len(delta_temp_n)):
-                    data = flat_plate_precalc(
-                        latitude, longitude, collector_tilt, collector_azimuth, 
-                        eta_0, a_1, a_2, temp_collector_inlet[i], delta_temp_n[i], 
-                        irradiance_global, irradiance_diffuse, temp_amb_col
-                    )
-                    flatPlateCollectorData.append(data)
-                    self.collectors_eta_c.append(data['eta_c'])
-                    self.collectors_heat[connector[i]] = data['collectors_heat'] / 1000  # kWh per m²
+                # flatPlateCollectorData = []
+                # for i in range(len(delta_temp_n)):
+                #     data = flat_plate_precalc(
+                #         latitude, longitude, collector_tilt, collector_azimuth, 
+                #         eta_0, a_1, a_2, temp_collector_inlet[i], delta_temp_n[i], 
+                #         irradiance_global, irradiance_diffuse, temp_amb_col
+                #     )
+                #     flatPlateCollectorData.append(data)
+                #     self.collectors_eta_c.append(data['eta_c'])
+                #     self.collectors_heat[connector[i]] = data['collectors_heat'] / 1000  # kWh per m²
                     
                 
                 flatPlateCollectorData_sh = flat_plate_precalc(
@@ -74,6 +74,9 @@ class SolarCollector:
                 
                 
         else:
+            # Initialize variables
+            self.collectors_eta_c = []
+            self.collectors_heat = {}
             if isinstance(delta_temp_n, float):
                 def calculate_flat_plate(azimuth_offset):
                     return flat_plate_precalc(
@@ -86,31 +89,79 @@ class SolarCollector:
                 # Calculate average efficiency and heat
                 avg_eta_c = (flatPlateCollectorData1['eta_c'] + flatPlateCollectorData2['eta_c']) / 2
                 avg_collectors_heat = (flatPlateCollectorData1['collectors_heat'] + flatPlateCollectorData2['collectors_heat']) / 2
-                self.collectors_eta_c = avg_eta_c
-                self.collectors_heat = avg_collectors_heat / 1000  # Convert to kWh per m²
-                
-                
+                self.collectors_eta_c.append(avg_eta_c['eta_c'])
+                self.collectors_heat[connector] = avg_collectors_heat['collectors_heat'] / 1000  # kWh per m²
             else:
-                flatPlateCollectorData = []
-                self.collectors_eta_c = []
-                self.collectors_heat = {}
-                for i in range(len(delta_temp_n)):
+                # flatPlateCollectorData = []
+                # self.collectors_eta_c = []
+                # self.collectors_heat = {}
+                # for i in range(len(delta_temp_n)):
+                #     # Calculate for azimuth +90
+                #     flatPlateCollectorData1 = flat_plate_precalc(
+                #         latitude, longitude, collector_tilt, collector_azimuth + 90, eta_0, a_1, a_2, 
+                #         temp_collector_inlet[i], delta_temp_n[i], irradiance_global, irradiance_diffuse, temp_amb_col
+                #     )
+                #     # Calculate for azimuth -90
+                #     flatPlateCollectorData2 = flat_plate_precalc(
+                #         latitude, longitude, collector_tilt, collector_azimuth - 90, eta_0, a_1, a_2, 
+                #         temp_collector_inlet[i], delta_temp_n[i], irradiance_global, irradiance_diffuse, temp_amb_col
+                #     )
+                #     # Calculate average efficiency (eta_c) and heat
+                #     avg_eta_c = (flatPlateCollectorData1['eta_c'] + flatPlateCollectorData2['eta_c']) / 2
+                #     avg_collectors_heat = (flatPlateCollectorData1['collectors_heat'] + flatPlateCollectorData2['collectors_heat']) / 2
+                #     self.collectors_eta_c.append(avg_eta_c)
+                    # self.collectors_heat[connector[i]] = avg_collectors_heat / 1000  # Convert to kWh per m²
+                    
+                # Calculate for azimuth +90
+                flatPlateCollectorData_sh1 = flat_plate_precalc(
+                    latitude, longitude, collector_tilt, collector_azimuth+90, 
+                    eta_0, a_1, a_2, temp_collector_inlet[0], delta_temp_n[0], 
+                    irradiance_global, irradiance_diffuse, temp_amb_col
+                )
+                # Calculate for azimuth -90
+                flatPlateCollectorData_sh2 = flat_plate_precalc(
+                    latitude, longitude, collector_tilt, collector_azimuth-90, 
+                    eta_0, a_1, a_2, temp_collector_inlet[0], delta_temp_n[0], 
+                    irradiance_global, irradiance_diffuse, temp_amb_col
+                )
+                self.collectors_heat_sh = (flatPlateCollectorData_sh1['collectors_heat']+flatPlateCollectorData_sh2['collectors_heat'])/2/1000                     
+                self.collectors_eta_c_sh = (flatPlateCollectorData_sh1['eta_c']+flatPlateCollectorData_sh2['eta_c'])/2
+                ep_costs = [epc]
+                offset = [base]
+                if outputs.__len__()>=3:
                     # Calculate for azimuth +90
-                    flatPlateCollectorData1 = flat_plate_precalc(
-                        latitude, longitude, collector_tilt, collector_azimuth + 90, eta_0, a_1, a_2, 
-                        temp_collector_inlet[i], delta_temp_n[i], irradiance_global, irradiance_diffuse, temp_amb_col
+                    flatPlateCollectorData_dhw1 = flat_plate_precalc(
+                        latitude, longitude, collector_tilt, collector_azimuth+90, 
+                        eta_0, a_1, a_2, temp_collector_inlet[2], delta_temp_n[2], 
+                        irradiance_global, irradiance_diffuse, temp_amb_col
                     )
                     # Calculate for azimuth -90
-                    flatPlateCollectorData2 = flat_plate_precalc(
-                        latitude, longitude, collector_tilt, collector_azimuth - 90, eta_0, a_1, a_2, 
-                        temp_collector_inlet[i], delta_temp_n[i], irradiance_global, irradiance_diffuse, temp_amb_col
+                    flatPlateCollectorData_dhw2 = flat_plate_precalc(
+                        latitude, longitude, collector_tilt, collector_azimuth-90, 
+                        eta_0, a_1, a_2, temp_collector_inlet[2], delta_temp_n[2], 
+                        irradiance_global, irradiance_diffuse, temp_amb_col
                     )
-                    # Calculate average efficiency (eta_c) and heat
-                    avg_eta_c = (flatPlateCollectorData1['eta_c'] + flatPlateCollectorData2['eta_c']) / 2
-                    avg_collectors_heat = (flatPlateCollectorData1['collectors_heat'] + flatPlateCollectorData2['collectors_heat']) / 2
-                    self.collectors_eta_c.append(avg_eta_c)
-                    self.collectors_heat[connector[i]] = avg_collectors_heat / 1000  # Convert to kWh per m²
-                
+                    self.collectors_heat_dhw = (flatPlateCollectorData_dhw1['collectors_heat']+flatPlateCollectorData_dhw2['collectors_heat'])/2/1000                     
+                    self.collectors_eta_c_dhw = (flatPlateCollectorData_dhw1['eta_c']+flatPlateCollectorData_dhw2['eta_c'])/2
+                    ep_costs = [0, epc]
+                    offset = [0.000001, base]
+                    if outputs.__len__()>3:
+                        # Calculate for azimuth +90
+                        flatPlateCollectorData_T21 = flat_plate_precalc(
+                            latitude, longitude, collector_tilt, collector_azimuth+90, 
+                            eta_0, a_1, a_2, temp_collector_inlet[1], delta_temp_n[1], 
+                            irradiance_global, irradiance_diffuse, temp_amb_col
+                        )
+                        # Calculate for azimuth -90
+                        flatPlateCollectorData_T22 = flat_plate_precalc(
+                            latitude, longitude, collector_tilt, collector_azimuth-90, 
+                            eta_0, a_1, a_2, temp_collector_inlet[1], delta_temp_n[1], 
+                            irradiance_global, irradiance_diffuse, temp_amb_col
+                        )
+                        self.collectors_heat_T2 = (flatPlateCollectorData_T21['collectors_heat']+flatPlateCollectorData_T22['collectors_heat'])/2/1000                     
+                        self.collectors_eta_c_T2 = (flatPlateCollectorData_T21['eta_c']+flatPlateCollectorData_T22['eta_c'])/2                        
+                        ep_costs = [0, 0, epc]
+                        offset = [0.000001, 0.000001, base]
                 
         
         if not (np.isnan(roof_area) or np.isnan(zenith_angle)):
