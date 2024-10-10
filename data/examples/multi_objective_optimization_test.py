@@ -59,9 +59,9 @@ if __name__ == '__main__':
     numberOfOptimizations = 7 # ODD NUMBER number of optimizations in multi objective optimization pareto front
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
-    numberOfBuildings = 2
+    numberOfBuildings = 10
     cluster_N = [0]
-    merge_opt = [True]
+    merge_opt = [False]
     con_opt = ["Con"]  # ["Con","noCon"]
     clst_opt = [True]
     clN=0
@@ -84,12 +84,12 @@ if __name__ == '__main__':
     # inputfileName = "scenario_Annual_2_costs_TES.xls"
     # inputFilePath = curDir / ".." / "excels" / "IamLenz"
     inputFilePath = curDir / ".." / "excels" / "pvt_example"
-    # inputfileName = "scenario_IamLenz_10_costs_TES_GSHP_PV_ST_PVT.xls"
-    inputfileName = "scenario_3.xls"
+    inputfileName = "scenario_IamLenz_10_costs_075_TES_allHP_PV_ST_PVT_mrgFalse.xls"
+    # inpu  tfileName = "scenario_3.xls"
 
     resultFilePath = r"..\results"
     # resultFileName = "results_TES_Final_10bld_allHP_PV_PVT_ST_TES.xlsx"
-    resultFileName = "results_scen3.xlsx"
+    resultFileName = "results_IamLenz_TES_mrgFalse.xlsx"
     # resultFileName = "results_TES_env_" + str(clN) + "_TES_allHP_10bld.xlsx"
 
     # create weather file based on coordinates and PVGIS or supplying file to read
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     # set a time period for the optimization problem according to the size of clusers
     timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-12-31 23:00:00", freq="60min")
     optimizationType = "costs"  # set as "env" for environmental optimization
-    mergeLinkBuses_bool = True
+    mergeLinkBuses_bool = False
     tL_bool = True  # temperature levels flag
     """ if tL_bool==False -> single dT and Tinlet for solar technologies
      and if True and stratified storage is interesting then mergeBuses
@@ -248,7 +248,7 @@ if __name__ == '__main__':
         network.printEnvImpacts()
 
         # save results
-        resultFileName = "results_pareto_mergeTrue_scen3" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
+        resultFileName = "results_pareto_mergeFalse_IamLenz_mrgFalse_TESPVSTPVTallHP" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
 
         if not os.path.exists(resultFilePath):
             os.makedirs(resultFilePath)
