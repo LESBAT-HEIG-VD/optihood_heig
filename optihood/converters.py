@@ -432,14 +432,14 @@ class PVT(solph.components.Transformer):
                          'custom_attributes': {'env_per_capa': env_capa, 
                                                'space': self.surface_used, 
                                                'space_el': surface_used_el,
-                                                  'roof_area': roof_area}}
+                                                  }}#'roof_area': roof_area}}
             investArgsSH = {'ep_costs': ep_costs[0],
                           'minimum': capacityMin,
                           'maximum': capacityMax,
                           'custom_attributes': {'env_per_capa': env_capa, 
                                                 'space': self.surface_used, 
                                                 'space_el': surface_used_el,
-                                                  }}#'roof_area': roof_area}}
+                                                  'roof_area': roof_area}}
             if outputs.__len__() >= 3:
                 investArgsDHW = {'ep_costs': ep_costs[-1],
                               'minimum': capacityMin,
@@ -465,7 +465,7 @@ class PVT(solph.components.Transformer):
                             'custom_attributes': {'env_per_capa': env_capa, 
                                                   'space': self.surface_used, 
                                                   'space_el': surface_used_el,
-                                                  'roof_area': roof_area}}
+                                                  }}#'roof_area': roof_area}}
             investArgsSH = {'ep_costs': ep_costs[0],
                           'minimum': capacityMin,
                           'maximum': capacityMax,
@@ -474,7 +474,7 @@ class PVT(solph.components.Transformer):
                           'custom_attributes': {'env_per_capa': env_capa, 
                                                 'space': self.surface_used, 
                                                 'space_el': surface_used_el,
-                                                  }}#'roof_area': roof_area}}
+                                                  'roof_area': roof_area}}
             
             if outputs.__len__() >= 3:
                 investArgsDHW = {'ep_costs': ep_costs[-1],
@@ -482,7 +482,9 @@ class PVT(solph.components.Transformer):
                                  'maximum': capacityMax,
                                  'nonconvex': True,
                                  'offset': offset[-1],
-                                 'custom_attributes': {'env_per_capa': env_capa, 'space': self.surface_used, 'space_el': surface_used_el,
+                                 'custom_attributes': {'env_per_capa': env_capa, 
+                                                       'space': self.surface_used, 
+                                                       'space_el': surface_used_el,
                                                       }}#'roof_area': roof_area}}
                 if outputs.__len__() > 3:
                     investArgsT2 = {'ep_costs': ep_costs[1],
@@ -490,7 +492,9 @@ class PVT(solph.components.Transformer):
                             'maximum': capacityMax,
                             'nonconvex': True,
                             'offset': offset[1],
-                            'custom_attributes': {'env_per_capa': env_capa, 'space': self.surface_used, 'space_el': surface_used_el,
+                            'custom_attributes': {'env_per_capa': env_capa, 
+                                                  'space': self.surface_used, 
+                                                  'space_el': surface_used_el,
                                                   }}#'roof_area': roof_area}}
 
 

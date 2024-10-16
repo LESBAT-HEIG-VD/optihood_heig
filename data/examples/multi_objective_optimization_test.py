@@ -59,9 +59,9 @@ if __name__ == '__main__':
     numberOfOptimizations = 7 # ODD NUMBER number of optimizations in multi objective optimization pareto front
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
-    numberOfBuildings = 10
+    numberOfBuildings = 2
     cluster_N = [0]
-    merge_opt = [False]
+    merge_opt = [True]
     con_opt = ["Con"]  # ["Con","noCon"]
     clst_opt = [True]
     clN=0
@@ -82,14 +82,15 @@ if __name__ == '__main__':
     # inputfileName = "scenario_Annual_2_costs_100%_SH35_cluster_HPOnly.xls"
     # inputfileName = "scenario_Annual_10_costs_TES_Final.xls"
     # inputfileName = "scenario_Annual_2_costs_TES.xls"
-    # inputFilePath = curDir / ".." / "excels" / "IamLenz"
-    inputFilePath = curDir / ".." / "excels" / "pvt_example"
-    inputfileName = "scenario_IamLenz_10_costs_075_TES_allHP_PV_ST_PVT_mrgFalse.xls"
-    # inpu  tfileName = "scenario_3.xls"
+    inputFilePath = curDir / ".." / "excels" / "IamLenz"
+    # inputFilePath = curDir / ".." / "excels" / "pvt_example"
+    # inputfileName = "scenario_IamLenz_2.xls"
+    # inputfileName = "scenario_IamLenz_10_costs_075_TES_CostlyBiCAD.xls"
+    inputfileName = "scenario_IamLenz_2_costs_075_TES_CostlyBiCAD.xls"
 
     resultFilePath = r"..\results"
     # resultFileName = "results_TES_Final_10bld_allHP_PV_PVT_ST_TES.xlsx"
-    resultFileName = "results_IamLenz_TES_mrgFalse.xlsx"
+    resultFileName = "results_IamLenz_TES_mrgTrue_2.xlsx"
     # resultFileName = "results_TES_env_" + str(clN) + "_TES_allHP_10bld.xlsx"
 
     # create weather file based on coordinates and PVGIS or supplying file to read
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     # set a time period for the optimization problem according to the size of clusers
     timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-12-31 23:00:00", freq="60min")
     optimizationType = "costs"  # set as "env" for environmental optimization
-    mergeLinkBuses_bool = False
+    mergeLinkBuses_bool = True
     tL_bool = True  # temperature levels flag
     """ if tL_bool==False -> single dT and Tinlet for solar technologies
      and if True and stratified storage is interesting then mergeBuses
@@ -200,7 +201,7 @@ if __name__ == '__main__':
         else:
             optimizationType = "costs"
             if opt == 1:    # Cost optimization
-                envImpactlimit = 1000000                
+                envImpactlimit = 1000000000000                
                 print(envImpactlimit)
             else:           # Constrained optimization for multi-objective analysis (steps between Cost-Optimized and Env-Optimized)
                 # envImpactlimit = steps[opt - 3]
@@ -248,7 +249,7 @@ if __name__ == '__main__':
         network.printEnvImpacts()
 
         # save results
-        resultFileName = "results_pareto_mergeFalse_IamLenz_mrgFalse_TESPVSTPVTallHP" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
+        resultFileName = "results_pareto_mrgON_IamLenz_10_CostlyLinks_GSHP" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
 
         if not os.path.exists(resultFilePath):
             os.makedirs(resultFilePath)
@@ -295,7 +296,7 @@ if __name__ == '__main__':
     if not os.path.exists(figureFilePath):
         os.makedirs(figureFilePath)
 
-    figureFileName = f"Pareto_10_Gas_HP_PV_PVT_TES.png"
+    figureFileName = f"Pareto_IamLenz_2_GSHP_PV_PVT_ST_075TES_mrgON.png"
 
     plotParetoFront(os.path.join(figureFilePath, figureFileName), costsList, envList)
 
