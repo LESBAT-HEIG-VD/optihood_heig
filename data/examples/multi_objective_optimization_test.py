@@ -86,11 +86,11 @@ if __name__ == '__main__':
     # inputFilePath = curDir / ".." / "excels" / "pvt_example"
     # inputfileName = "scenario_IamLenz_2.xls"
     # inputfileName = "scenario_IamLenz_10_costs_075_TES_CostlyBiCAD.xls"
-    inputfileName = "scenario_IamLenz_2_costs_075_TES_CostlyBiCAD.xls"
+    inputfileName = "scenario_IamLenz_2_costs_075_TES_GSHP_PV_ST_PVT-CAD.xls"
 
     resultFilePath = r"..\results"
     # resultFileName = "results_TES_Final_10bld_allHP_PV_PVT_ST_TES.xlsx"
-    resultFileName = "results_IamLenz_TES_mrgTrue_2.xlsx"
+    resultFileName = "results_IamLenz_TES_mrgTrue_2-CAD.xlsx"
     # resultFileName = "results_TES_env_" + str(clN) + "_TES_allHP_10bld.xlsx"
 
     # create weather file based on coordinates and PVGIS or supplying file to read
@@ -249,7 +249,7 @@ if __name__ == '__main__':
         network.printEnvImpacts()
 
         # save results
-        resultFileName = "results_pareto_mrgON_IamLenz_10_CostlyLinks_GSHP" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
+        resultFileName = "results_pareto_mrgON_IamLenz_2_CAD_GSHP" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
 
         if not os.path.exists(resultFilePath):
             os.makedirs(resultFilePath)
