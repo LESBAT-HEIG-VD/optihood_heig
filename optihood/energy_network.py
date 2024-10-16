@@ -1151,18 +1151,18 @@ class EnergyNetworkClass(solph.EnergySystem):
                     print("Invested in {:.1f} kW GasBoiler.".format(investSH))
             if ("heatSource_SHsolarCollector__" + buildingLabel, "solarConnectBusSH__" + buildingLabel) in capacitiesInvestedTransformers:
                 invest = capacitiesInvestedTransformers[("heatSource_SHsolarCollector__" + buildingLabel, "solarConnectBusSH__" + buildingLabel)]
-                if invest > 0.05:
+                if invest > -0.05:
                     print("Invested in {:.1f} m² SolarCollector.".format(invest))
             if ("pv__" + buildingLabel, "electricityProdBus__" + buildingLabel) in capacitiesInvestedTransformers:
                 invest = capacitiesInvestedTransformers[("pv__" + buildingLabel, "electricityProdBus__" + buildingLabel)]
-                if invest > 0.05:
+                if invest > -0.05:
                     print("Invested in {:.1f} kWp  PV.".format(invest))
             if ("heatSource_SHpvt__" + buildingLabel, "pvtConnectBusSH__" + buildingLabel) in capacitiesInvestedTransformers:
                 invest = capacitiesInvestedTransformers[("heatSource_SHpvt__" + buildingLabel, "pvtConnectBusSH__" + buildingLabel)]
-                if invest > 0.05:
+                if invest > -0.05:
                     print("Invested in {:.1f} m² PVT collector.".format(invest))
             
-            if ("heat_solarCollector_1__" + buildingLabel, "solarConnectBus__" + buildingLabel) in capacitiesInvestedTransformers:
+            if ("heatSource_SHsolarCollector_1__" + buildingLabel, "solarConnectBus__" + buildingLabel) in capacitiesInvestedTransformers:
                 st_counter=0
                 for key, value in capacitiesInvestedTransformers.items():   # iter on both keys and values                    
                     if key[0].startswith('heat_solarCollector_') and key[0].endswith(buildingLabel):

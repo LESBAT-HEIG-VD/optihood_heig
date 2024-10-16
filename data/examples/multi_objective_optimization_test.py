@@ -86,7 +86,8 @@ if __name__ == '__main__':
     # inputFilePath = curDir / ".." / "excels" / "pvt_example"
     # inputfileName = "scenario_IamLenz_2.xls"
     # inputfileName = "scenario_IamLenz_10_costs_075_TES_CostlyBiCAD.xls"
-    inputfileName = "scenario_IamLenz_2_costs_075_TES_GSHP_PV_ST_PVT-CAD.xls"
+    inputfileName = "scenario_IamLenz_2_costs_075_TES_CostlyBiCAD.xls"
+    # inputfileName = "scenario_IamLenz_2_costs_075_TES_GSHP_PV_ST_PVT-CAD.xls"
 
     resultFilePath = r"..\results"
     # resultFileName = "results_TES_Final_10bld_allHP_PV_PVT_ST_TES.xlsx"
@@ -134,7 +135,7 @@ if __name__ == '__main__':
                      save_file=True,
                      load_file=False,
                      set_scenario=True,
-                     single_scenario=True)
+                     single_scenario=False)
     # create electricity profile based on Romande Energie tarif
     # or spot profile in electricity_spot.csv
     # options are : "Tarif" or "Spot"
@@ -249,7 +250,7 @@ if __name__ == '__main__':
         network.printEnvImpacts()
 
         # save results
-        resultFileName = "results_pareto_mrgON_IamLenz_2_CAD_GSHP" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
+        resultFileName = "results_pareto_mrgON_IamLenz_2_oldCAD_GSHP" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
 
         if not os.path.exists(resultFilePath):
             os.makedirs(resultFilePath)
