@@ -59,7 +59,7 @@ if __name__ == '__main__':
     numberOfOptimizations = 7 # ODD NUMBER number of optimizations in multi objective optimization pareto front
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
-    numberOfBuildings = 2
+    numberOfBuildings = 10
     cluster_N = [0]
     merge_opt = [True]
     con_opt = ["Con"]  # ["Con","noCon"]
@@ -86,12 +86,12 @@ if __name__ == '__main__':
     # inputFilePath = curDir / ".." / "excels" / "pvt_example"
     # inputfileName = "scenario_IamLenz_2.xls"
     # inputfileName = "scenario_IamLenz_10_costs_075_TES_CostlyBiCAD.xls"
-    inputfileName = "scenario_IamLenz_2_costs_075_TES_CostlyBiCAD.xls"
+    inputfileName = "scenario_IamLenz_10_075_TES_GSHP_PV_ST_PVT_mergeON.xls"
     # inputfileName = "scenario_IamLenz_2_costs_075_TES_GSHP_PV_ST_PVT-CAD.xls"
 
     resultFilePath = r"..\results"
     # resultFileName = "results_TES_Final_10bld_allHP_PV_PVT_ST_TES.xlsx"
-    resultFileName = "results_IamLenz_TES_mrgTrue_2-CAD.xlsx"
+    resultFileName = "results_IamLenz_TES_mrgON_10.xlsx"
     # resultFileName = "results_TES_env_" + str(clN) + "_TES_allHP_10bld.xlsx"
 
     # create weather file based on coordinates and PVGIS or supplying file to read
@@ -297,7 +297,7 @@ if __name__ == '__main__':
     if not os.path.exists(figureFilePath):
         os.makedirs(figureFilePath)
 
-    figureFileName = f"Pareto_IamLenz_2_GSHP_PV_PVT_ST_075TES_mrgON.png"
+    figureFileName = f"Pareto_IamLenz_10_GSHP_PV_PVT_ST_075TES_mrgON.png"
 
     plotParetoFront(os.path.join(figureFilePath, figureFileName), costsList, envList)
 

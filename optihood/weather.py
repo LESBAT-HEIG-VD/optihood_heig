@@ -689,6 +689,7 @@ class weather:
                            
                                 if tec == 'pv' or tec == 'pvt':
                                     select_prov=np.vstack([select_prov,select.loc[select['ICPe'].idxmax(), :]])
+                                    select_prov = np.vstack([select_prov, select.loc[select['spec_prod_e'].idxmax(), :]])
                                     # self.solar_cases_select = pd.concat([self.solar_cases_select,
                                     #                                      select.loc[select['ICPe'].idxmax(), :]], axis=1)
                                     
@@ -696,6 +697,7 @@ class weather:
                                     # self.solar_cases_select = pd.concat([self.solar_cases_select,
                                     #                                      select.loc[select['ICPth'].idxmax(), :]], axis=1)
                                     select_prov=np.vstack([select_prov,select.loc[select['ICPth'].idxmax(), :]])
+                                    select_prov = np.vstack([select_prov, select.loc[select['spec_prod_th'].idxmax(), :]])
                                     # self.solar_cases_select = self.solar_cases_select.append(
                                     #     select.loc[select['ICPth'].idxmax(), :])
                             else:
