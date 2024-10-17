@@ -13,11 +13,16 @@ import numpy as np
 import geopandas
 from shapely.geometry import Point
 import os
-import scipy
-from scipy.cluster import vq
+# import scipy
+from sklearn.decomposition import PCA
+from scipy.cluster.vq import whiten, kmeans2, vq
+# from scipy.cluster import vq
 from xlutils.copy import copy
 from optihood.calpinage import Calpinage_light as cp
+import optihood.TimeSeriesClustering as TSc
 import math
+from scipy.spatial.distance import cdist
+
 
 
 class weather:
@@ -1135,56 +1140,78 @@ class weather:
                                                             'str.diffus': 'sum',
                                                             'ground_temp': 'mean',
                                                             'pressure': 'mean'})
-        self.meteo_daily['week_end'] = [
-            1000 if d.weekday() >= 5 else 0 for d in self.meteo_daily.index]
-        # self.agg_demand.set_index('timestamp', drop=True, inplace=True)
-        # try:
-        #     self.agg_demand.index = pd.to_datetime(
-        #         self.agg_demand.index,format="%m/%d/%Y %I:%M:%S %p").tz_localize('UTC')
-        # except:
-        #     self.agg_demand.index = pd.to_datetime(
-        #             self.agg_demand.index,format="%d.%m.%Y %H:%M").tz_localize('UTC')
-        self.agg_demand_daily = self.agg_demand.resample('D').sum()
-        try:
-            self.cluster_DB = pd.merge(
-                self.meteo_daily.tz_localize(None), self.agg_demand_daily, how='inner', left_index=True, right_index=True)
-        except:
-            self.cluster_DB = pd.merge(
-                self.meteo_daily, self.agg_demand_daily, how='inner', left_index=True, right_index=True)
-            
+        
         if clustering_vars == []:
             """
             we cluster on meteo variables and on aggregated demand
             """
             clustering_vars = ['tre200h0', 'gls', 'str.diffus', 'ground_temp', 'pressure', 'week_end',
                                'electricityDemand', 'spaceHeatingDemand', 'domesticHotWaterDemand']  # columns to use for clustering
-        clustering_input = self.cluster_DB.loc[:, clustering_vars]
-
-        """Normalize input data and perform clustering
-        """
-        clustering_input_norm = vq.whiten(clustering_input)
-        self.meteo_cluster, self.code_BK = vq.kmeans2(
-            clustering_input_norm, self.n_cluster, iter=100, thresh=1e-5, minit="++")
-
+        
+        # Initialize TimeSeriesClustering class with data
+        clustering_instance = TSc(self.meteo_daily, 
+                                  self.agg_demand,
+                                  n_clusters=self.n_cluster)
+        # Perform clustering with K-Shape
+        clustering_instance.do_clustering(clustering_vars, 
+                                          method="kshape",
+                                          use_dtw=True,
+                                          use_autoencoder=True)
+        
+        
+        # clustering_input = self.cluster_DB.loc[:, clustering_vars]
+        self.meteo_cluster = clustering_instance.cluster_centers_
+        self.code_BK=clustering_instance.code_BK
         """locate nearest days to clusters and compute bin
         """
         labels = []
         lab_indx = []
         lab_d = []
         for i in range(self.n_cluster):
-            cl, d = vq.vq(clustering_input_norm, [self.meteo_cluster[i]])
-            labels.append(d.argmin())
+            # Get the cluster center for the current cluster
+            cluster_center = self.meteo_cluster[i]  # This now holds the actual cluster center
+        
+            # Calculate distances from all days to the cluster center
+            distances = cdist(clustering_instance.clustering_input, cluster_center.reshape(1, -1), metric='euclidean')
+            nearest_index = np.argmin(distances)  # Find the index of the nearest day
+            labels.append(nearest_index)
             lab_indx.append(i)
-            lab_d.append(d.min())
+            lab_d.append(distances[nearest_index][0])
+                # """Normalize input data and perform clustering
+                # """
+                # # clustering_input_norm = vq.whiten(clustering_input)
+                # clustering_input_norm = whiten(clustering_input)
+                # # Apply PCA for dimensionality reduction
+                # pca = PCA(n_components=0.95)  # Keep 95% of variance
+                # clustering_input_pca = pca.fit_transform(clustering_input_norm)
+            
+                
+                # # self.meteo_cluster, self.code_BK = vq.kmeans2(
+                #     # clustering_input_norm, self.n_cluster, iter=100, thresh=1e-5, minit="++")
+                # self.meteo_cluster, self.code_BK = kmeans2(clustering_input_pca, self.n_cluster, iter=100, thresh=1e-5, minit="++")
+        
+                # """locate nearest days to clusters and compute bin
+                # """
+                # labels = []
+                # lab_indx = []
+                # lab_d = []
+                # for i in range(self.n_cluster):
+                #     cl, d = vq(clustering_input_pca, [self.meteo_cluster[i]])
+                #     labels.append(d.argmin())
+                #     lab_indx.append(i)
+                #     lab_d.append(d.min())
 
         """create clustering result table
         """
+        # self.results = pd.DataFrame({'nearest_day_index': labels, 'cluster_label': lab_indx, 'distance': lab_d})
+
         self.results = pd.DataFrame(index=self.meteo_daily.index[labels])
         self.results['labels'] = lab_indx
         self.results['count'] = pd.Series(
             self.code_BK).value_counts().loc[lab_indx].values
         self.results['distances'] = lab_d
-
+        # self.pca = pca  # Save the PCA model for later use if needed
+    
         return None
 
 

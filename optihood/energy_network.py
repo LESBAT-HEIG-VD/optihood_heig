@@ -81,14 +81,21 @@ class EnergyNetworkClass(solph.EnergySystem):
         self._clusterDate = {}
         if clusters:
             self._numberOfDays = len(clusters)
-            lastDay = datetime(timestamp.year[0], 1, 1) + timedelta(self._numberOfDays - 1)
+            lastDay = datetime(timestamp.year[0], 
+                               timestamp.month[0],
+                               timestamp.day[0]) + timedelta(self._numberOfDays - 1)
             lastDay = lastDay.strftime('%Y-%m-%d')
             i = 1
             for day in clusters:
-                d_clusterIndex = datetime(timestamp.year[0], 1, 1) + timedelta(i - 1)
+                d_clusterIndex = datetime(timestamp.year[0], 
+                                   timestamp.month[0],
+                                   timestamp.day[0]) + timedelta(i - 1)
                 self._clusterDate[day] = d_clusterIndex.strftime('%Y-%m-%d')
                 i += 1
-            timestamp = pd.date_range(f"{timestamp.year[0]}-01-01 00:00:00", f"{lastDay} 23:00:00", freq=timestamp.freq)
+            timestamp = pd.date_range(datetime(self._timeIndexReal.year[0], 
+                                                  self._timeIndexReal.month[0], 
+                                                  self._timeIndexReal.day[0]), 
+                                      f"{lastDay} 23:00:00", freq=timestamp.freq)
         self._nodesList = []
         self._thermalStorageList = []
         self._storageContentSH = {}
@@ -840,32 +847,79 @@ class EnergyNetworkClass(solph.EnergySystem):
                 capacitiesStorages[storage] = capacitiesStorages[storage] / self.__LgenericStorage['aquifierStorage']
         return capacitiesStorages
 
-    def _postprocessingClusters(self, clusterSize,clusterBook):
-        logging.info("Cluster post-processing started")
+    # def _postprocessingClusters(self, clusterSize,clusterBook):
+    #     logging.info("Cluster post-processing started")
 
-        flows = [x for x in self._optimizationResults.keys() if x[1] is not None]
+    #     flows = [x for x in self._optimizationResults.keys() if x[1] is not None]
+    #     for flow in flows:
+    #         extrapolated_results = None
+    #         dailyIndex = pd.period_range(datetime(self._timeIndexReal.year[0], 
+    #                                               self._timeIndexReal.month[0], 
+    #                                               self._timeIndexReal.day[0]), 
+    #                                      freq='D', periods=(self._timeIndexReal[-1]-
+    #                                                         self._timeIndexReal[0]+
+    #                                                         timedelta(seconds=3600)).days)
+    #         #for each day of the year, locate the corresponding cluster day &
+    #         # create vector of the year with only cluster days distributed 
+    #         #based on the date affinity to a particular cluster day.
+    #         for i in range(len(dailyIndex)):
+    #             temp = self._optimizationResults[flow]['sequences'].loc[
+    #                 self._clusterDate[
+    #                     list(clusterSize.keys())[clusterBook.iloc[i,0]-1]],:]
+    #             if extrapolated_results is not None:
+    #                 extrapolated_results = pd.concat([extrapolated_results, temp])
+    #             else:
+    #                 extrapolated_results = temp
+    #         extrapolated_results.index = self._timeIndexReal
+    #         extrapolated_results.columns = ['flow']
+    #         self._optimizationResults[flow]['sequences'] = extrapolated_results
+    #     logging.info("Cluster post-processing finished")
+    #     return None
+    def _postprocessingClusters(self, clusterSize, clusterBook):
+        logging.info("Cluster post-processing started")
+    
+        # Get the flows that are non-None in _optimizationResults
+        flows = [flow for flow in self._optimizationResults.keys() if flow[1] is not None]
+        
+        # Define the daily index based on the real-time range
+        dailyIndex = pd.period_range(
+            start=datetime(self._timeIndexReal.year[0], 
+                           self._timeIndexReal.month[0], 
+                           self._timeIndexReal.day[0]), 
+            freq='D', 
+            periods=(self._timeIndexReal[-1] - self._timeIndexReal[0] + 
+                     timedelta(seconds=3600)).days
+        )
+        
+        # Loop over each flow
         for flow in flows:
-            extrapolated_results = None
-            dailyIndex = pd.period_range(datetime(self._timeIndexReal.year[0], 
-                                                  self._timeIndexReal.month[0], 
-                                                  self._timeIndexReal.day[0]), 
-                                         freq='D', periods=(self._timeIndexReal[-1]-
-                                                            self._timeIndexReal[0]+
-                                                            timedelta(seconds=3600)).days)
-            #for each day of the year, locate the corresponding cluster day &
-            # create vector of the year with only cluster days distributed 
-            #based on the date affinity to a particular cluster day.
-            for i in range(len(dailyIndex)):
-                temp = self._optimizationResults[flow]['sequences'].loc[
-                    self._clusterDate[
-                        list(clusterSize.keys())[clusterBook.iloc[i,0]-1]],:]
-                if extrapolated_results is not None:
-                    extrapolated_results = pd.concat([extrapolated_results, temp])
-                else:
-                    extrapolated_results = temp
-            extrapolated_results.index = self._timeIndexReal
+            extrapolated_results = []  # Initialize as a list for better performance with pd.concat
+            
+            # For each day in the real year, assign the corresponding cluster day
+            for i, day in enumerate(dailyIndex):
+                # Identify the cluster day based on clusterBook mapping
+                cluster_day_index = list(clusterSize.keys())[clusterBook.iloc[i, 0] - 1]
+                
+                # Extract the corresponding data from the cluster day
+                try:
+                    temp = self._optimizationResults[flow]['sequences'].loc[self._clusterDate[cluster_day_index], :]
+                except KeyError:
+                    logging.error(f"Cluster day {cluster_day_index} not found in _clusterDate.")
+                    continue  # Skip the iteration if the cluster day is not found
+                
+                # Append the day's results to the list
+                extrapolated_results.append(temp)
+            
+            # Concatenate all days into a single DataFrame and adjust the index
+            extrapolated_results = pd.concat(extrapolated_results)
+            extrapolated_results.index = self._timeIndexReal  # Reassign the real time index
+            
+            # Ensure the column name is set to 'flow'
             extrapolated_results.columns = ['flow']
+            
+            # Update the results in the optimization dictionary
             self._optimizationResults[flow]['sequences'] = extrapolated_results
+        
         logging.info("Cluster post-processing finished")
         return None
 
