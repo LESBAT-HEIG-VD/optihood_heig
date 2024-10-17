@@ -1162,13 +1162,13 @@ class EnergyNetworkClass(solph.EnergySystem):
                 if invest > -0.05:
                     print("Invested in {:.1f} m² PVT collector.".format(invest))
             
-            if ("heatSource_SHsolarCollector_1__" + buildingLabel, "solarConnectBus__" + buildingLabel) in capacitiesInvestedTransformers:
+            if ("heatSource_SHsolarCollector_1__" + buildingLabel, "solarConnectBusSH__" + buildingLabel) in capacitiesInvestedTransformers:
                 st_counter=0
                 for key, value in capacitiesInvestedTransformers.items():   # iter on both keys and values                    
-                    if key[0].startswith('heat_solarCollector_') and key[0].endswith(buildingLabel):
+                    if key[0].startswith('heatSource_SHsolarCollector_') and key[0].endswith(buildingLabel):
                         st_counter+=1
                 for n in range(1,st_counter+1):
-                    invest = capacitiesInvestedTransformers[("heat_solarCollector_" + str(n) + "__" + buildingLabel, "solarConnectBus__" + buildingLabel)]
+                    invest = capacitiesInvestedTransformers[("heatSource_SHsolarCollector_" + str(n) + "__" + buildingLabel, "solarConnectBusSH__" + buildingLabel)]
                 # if invest > 0.05:
                     print("Invested in {:.1f} m² of SolarCollector_{}".format(invest,str(n)))
             if ("pv_1__" + buildingLabel, "electricityProdBus__" + buildingLabel) in capacitiesInvestedTransformers:
@@ -1183,7 +1183,7 @@ class EnergyNetworkClass(solph.EnergySystem):
             if ("heatSource_SHpvt_1__" + buildingLabel, "pvtConnectBusSH__" + buildingLabel) in capacitiesInvestedTransformers:
                 pvt_counter=0
                 for key, value in capacitiesInvestedTransformers.items():   # iter on both keys and values                    
-                    if key[0].startswith('heatSource_pvt_') and key[0].endswith(buildingLabel):
+                    if key[0].startswith('heatSource_SHpvt_') and key[0].endswith(buildingLabel):
                         pvt_counter+=1
                 for n in range(1,1+pvt_counter):
                     invest = capacitiesInvestedTransformers[("heatSource_SHpvt_" + str(n) + "__" + buildingLabel, "pvtConnectBusSH__" + buildingLabel)]
