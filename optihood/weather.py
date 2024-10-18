@@ -19,7 +19,7 @@ from scipy.cluster.vq import whiten, kmeans2, vq
 # from scipy.cluster import vq
 from xlutils.copy import copy
 from optihood.calpinage import Calpinage_light as cp
-import optihood.TimeSeriesClustering as TSc
+from optihood.TimeSeriesClustering import TimeSeriesClustering as TSc
 import math
 from scipy.spatial.distance import cdist
 
@@ -45,7 +45,8 @@ class weather:
                  save_file=False,
                  load_file=False,
                  set_scenario=True,
-                 single_scenario=True
+                 single_scenario=True,
+                 cluster_method='kshape'
                  ):
         """
         Class constructor. Geographic info are taken from the source file
@@ -73,6 +74,7 @@ class weather:
         self.lb_wnd_d = "wind_direction"  # dkl010z0
         self.lb_IR = "IR"                 # oli000z0
         self.n_cluster = n_clusters
+        self.cluster_method=cluster_method
 
         if soil_param == True:
             self.T_soil_min = T_soil_min
@@ -1140,7 +1142,7 @@ class weather:
                                                             'str.diffus': 'sum',
                                                             'ground_temp': 'mean',
                                                             'pressure': 'mean'})
-        
+        self.meteo=self.irr_TMYf
         if clustering_vars == []:
             """
             we cluster on meteo variables and on aggregated demand
@@ -1149,14 +1151,21 @@ class weather:
                                'electricityDemand', 'spaceHeatingDemand', 'domesticHotWaterDemand']  # columns to use for clustering
         
         # Initialize TimeSeriesClustering class with data
-        clustering_instance = TSc(self.meteo_daily, 
+        clustering_instance = TSc(self.meteo, 
                                   self.agg_demand,
                                   n_clusters=self.n_cluster)
         # Perform clustering with K-Shape
+        cl_mt='KMeans'
+        use_dtw_flag=False
+        if self.cluster_method=='use_dtw':
+            use_dtw_flag=True
+        elif self.cluster_method=='kshape':
+            cl_mt='kshape' #NOT WORKING
+
         clustering_instance.do_clustering(clustering_vars, 
-                                          method="kshape",
-                                          use_dtw=True,
-                                          use_autoencoder=True)
+                                          method=cl_mt,
+                                          use_dtw=use_dtw_flag, #not working
+                                          use_autoencoder=False)#not working
         
         
         # clustering_input = self.cluster_DB.loc[:, clustering_vars]

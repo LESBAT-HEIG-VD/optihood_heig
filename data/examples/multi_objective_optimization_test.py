@@ -60,7 +60,7 @@ if __name__ == '__main__':
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
     numberOfBuildings = 10
-    cluster_N = [24,36,48,60]
+    cluster_N = [12,24,36,48,60]
     merge_opt = [True]
     con_opt = ["Con"]  # ["Con","noCon"]
     clst_opt = [True]
@@ -135,7 +135,7 @@ if __name__ == '__main__':
                          save_file=True,
                          load_file=False,
                          set_scenario=False,
-                         single_scenario=True)
+                         single_scenario=False)
         # create electricity profile based on Romande Energie tarif
         # or spot profile in electricity_spot.csv
         # options are : "Tarif" or "Spot"
