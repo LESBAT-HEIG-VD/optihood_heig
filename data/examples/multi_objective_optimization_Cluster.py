@@ -60,11 +60,11 @@ if __name__ == '__main__':
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
     numberOfBuildings = 10
-    cluster_N = [24]
+    cluster_N = [24,48,60,72]
     merge_opt = [True]
     con_opt = ["Con"]  # ["Con","noCon"]
     clst_opt = [True]
-    for cl_mt in ['KMeans','use_dtw',]:#,'use_dtw']:'kshape','kshape',
+    for cl_mt in ['KMeans']:#,'use_dtw',]:#,'use_dtw']:'kshape','kshape',
         for clN in cluster_N:
             if clN==0:
                 cl=False
@@ -86,7 +86,7 @@ if __name__ == '__main__':
             inputFilePath = curDir / ".." / "excels" / "IamLenz"
             
             # Input OF CLUSTERING STUDY: inputfileName = "scenario_IamLenz_10_075_TES_GSHP_PV_ST_PVT_mergeON.xls"
-            inputfileName="scenario_IamLenz_TES_GSHP_mrgON_CostsOK.xls"
+            inputfileName="scenario_IamLenz_TES_allHP_mrgON_CostsOK.xls"
             # inputfileName = "scenario_IamLenz_2_costs_075_TES_GSHP_PV_ST_PVT-CAD.xls"
         
             resultFilePath = r"..\results"
@@ -126,7 +126,11 @@ if __name__ == '__main__':
                 MIPGap_val = 0.01
             N_cl = clN  # number of meteo day clusters
             plot_bool = False  # specify if sankey plots are required
+            
+            clustering_vars = ['tre200h0', 'gls', 'pressure', 'week_end',
+                               'electricityDemand', 'spaceHeatingDemand', 'domesticHotWaterDemand']  # columns to use for clustering
         
+            
             """ Create meteo file and compute clusters if needed."""
             meteo_data=meteo(source=addr_source,
                              n_clusters=N_cl,
@@ -166,9 +170,30 @@ if __name__ == '__main__':
             elif clusterBool==False: #if no cluster is required, cluster={}
                 cluster={}
                 clusterBook=pd.DataFrame()
-        
-        
-        
+            cluster_plott_bool=True
+            if cluster_plott_bool==True:
+                
+                dailyIndex = pd.date_range(start=timePeriod[0],  
+                                            end=timePeriod[-1], freq='D')
+                synthetic_year=pd.DataFrame(columns=meteo_data.cluster_DB.columns)
+                for i, day in enumerate(dailyIndex):
+                    # Identify the cluster day based on clusterBook mapping
+                    cluster_day_index = list(cluster.keys())[clusterBook.iloc[i, 0] - 1]
+                    
+                    # Extract the corresponding data from the cluster day
+                    try:
+                        temp = meteo_data.cluster_DB.loc[cluster_day_index, :]
+                    except KeyError:
+                        logging.error(f"Cluster day {cluster_day_index} not found in _clusterDate.")
+                        continue  # Skip the iteration if the cluster day is not found
+                    
+                    # Append the day's results to the list
+                    
+                    synthetic_year = pd.concat([synthetic_year, temp], ignore_index=False)
+                synthetic_year.index=meteo_data.cluster_DB.index
+                synthetic_year.loc[:,['gls','spaceHeatingDemand']].plot()
+                plt.show()
+                
             # solver specific command line options
             optimizationOptions = {
                 "gurobi": {
@@ -251,7 +276,7 @@ if __name__ == '__main__':
                 network.printEnvImpacts()
         
                 # save results
-                resultFileName = f"results_pareto_mrgON_IamLenz_10_GSHP_cluster{clN}_method_h_{cl_mt}" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
+                resultFileName = f"results_pareto_mrgON_IamLenz_10_allHP_cluster{clN}_method_h_{cl_mt}" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
         
                 if not os.path.exists(resultFilePath):
                     os.makedirs(resultFilePath)
@@ -298,7 +323,7 @@ if __name__ == '__main__':
             if not os.path.exists(figureFilePath):
                 os.makedirs(figureFilePath)
         
-            figureFileName = f"Pareto_IamLenz_10_GSHP_PV_PVT_ST_075TES_mrgON_Cl{clN}_method_h_{cl_mt}.png"
+            figureFileName = f"Pareto_IamLenz_10_allHP_PV_PVT_ST_075TES_mrgON_Cl{clN}_method_h_{cl_mt}.png"
         
             plotParetoFront(os.path.join(figureFilePath, figureFileName), costsList, envList)
         

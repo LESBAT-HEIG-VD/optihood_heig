@@ -157,19 +157,19 @@ class weather:
             self.load_table_values()        
             self.demand_elec_tot['cost']=(self.En_HC+ \
                                                self.Tr_r_HC+ \
-                                                   self.Tr_r_abo*12/365/24*100+ \
-                                            self.Tr_r_Pw*self.pic_elec_demand/365/24*100+ \
+                                                   self.Tr_r_abo*12/self.demand_elec_tot['elecCons'].sum()*100+ \
+                                            self.Tr_r_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                             self.Tr_N_HC+ \
-                                            self.Tr_N_Pw*self.pic_elec_demand/365/24*100+ \
+                                            self.Tr_N_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                             self.Taxes)/100
             self.demand_elec_tot.loc[(self.demand_elec_tot.index.hour>self.HP_start) &
                                      (self.demand_elec_tot.index.hour<self.HP_end),'cost']= \
                                                     (self.En_HP+ \
                                                     self.Tr_r_HP+ \
-                                                    self.Tr_r_abo*12/365/24*100+ \
-                                                    self.Tr_r_Pw*self.pic_elec_demand/365/24*100+ \
+                                                    self.Tr_r_abo*12/self.demand_elec_tot['elecCons'].sum()*100+ \
+                                                    self.Tr_r_Pw*self.pic_elec_demand//self.demand_elec_tot['elecCons'].sum()*100+ \
                                                     self.Tr_N_HP+ \
-                                                    self.Tr_N_Pw*self.pic_elec_demand/365/24*100+ \
+                                                    self.Tr_N_Pw*self.pic_elec_demand//self.demand_elec_tot['elecCons'].sum()*100+ \
                                                     self.Taxes)/100
             if 'MT' in self.profile:
                 self.profile=self.profile.split(sep='_W')[0]+"_SUMMER"
@@ -177,19 +177,19 @@ class weather:
                 self.demand_elec_tot.loc[ self.summer_start: self.summer_end,
                                      'cost']=(self.En_HC+ \
                                                 self.Tr_r_HC+ \
-                                                self.Tr_r_abo*12/365/24*100+ \
-                                                self.Tr_r_Pw*self.pic_elec_demand/365/24*100+ \
+                                                self.Tr_r_abo*12/self.demand_elec_tot['elecCons'].sum()*100+ \
+                                                self.Tr_r_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                                 self.Tr_N_HC+ \
-                                                self.Tr_N_Pw*self.pic_elec_demand/365/24*100+ \
+                                                self.Tr_N_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                                 self.Taxes)/100
                 self.demand_elec_tot.loc[(self.demand_elec_tot.index.hour>self.HP_start) & 
                                          (self.demand_elec_tot.index.hour<self.HP_end),'cost']= \
                                                        (self.En_HP+ \
                                                         self.Tr_r_HP+ \
-                                                        self.Tr_r_abo*12/365/24*100+ \
-                                                        self.Tr_r_Pw*self.pic_elec_demand/365/24*100+ \
+                                                        self.Tr_r_abo*12/self.demand_elec_tot['elecCons'].sum()*100+ \
+                                                        self.Tr_r_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                                         self.Tr_N_HP+ \
-                                                        self.Tr_N_Pw*self.pic_elec_demand/365/24*100+ \
+                                                        self.Tr_N_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                                         self.Taxes)/100
         elif profile_elec=="Spot":
             # if elec profile is based on spot price then the transport componenet of the
@@ -205,35 +205,35 @@ class weather:
             
             # self.demand_elec_tot['cost']=self.spot.cost.values
             self.demand_elec_tot['cost']=(self.Tr_r_HC+ \
-                                                   self.Tr_r_abo*12/365/24*100+ \
-                                            self.Tr_r_Pw*self.pic_elec_demand/365/24*100+ \
+                                                   self.Tr_r_abo*12/self.demand_elec_tot['elecCons'].sum()*100+ \
+                                            self.Tr_r_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                             self.Tr_N_HC+ \
-                                            self.Tr_N_Pw*self.pic_elec_demand/365/24*100+ \
+                                            self.Tr_N_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                             self.Taxes)/100
             self.demand_elec_tot.loc[(self.demand_elec_tot.index.hour>self.HP_start) &
                                      (self.demand_elec_tot.index.hour<self.HP_end),'cost']= \
                                                     (self.Tr_r_HP+ \
-                                                    self.Tr_r_abo*12/365/24*100+ \
-                                                    self.Tr_r_Pw*self.pic_elec_demand/365/24*100+ \
+                                                    self.Tr_r_abo*12/self.demand_elec_tot['elecCons'].sum()*100+ \
+                                                    self.Tr_r_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                                     self.Tr_N_HP+ \
-                                                    self.Tr_N_Pw*self.pic_elec_demand/365/24*100+ \
+                                                    self.Tr_N_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                                     self.Taxes)/100
             self.profile=self.profile.split(sep='_W')[0]+"_SUMMER"
             self.load_table_values()
             self.demand_elec_tot.loc[ self.summer_start: self.summer_end,
                                  'cost']=(self.Tr_r_HC+ \
-                                            self.Tr_r_abo*12/365/24*100+ \
-                                            self.Tr_r_Pw*self.pic_elec_demand/365/24*100+ \
+                                            self.Tr_r_abo*12/self.demand_elec_tot['elecCons'].sum()*100+ \
+                                            self.Tr_r_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                             self.Tr_N_HC+ \
-                                            self.Tr_N_Pw*self.pic_elec_demand/365/24*100+ \
+                                            self.Tr_N_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                             self.Taxes)/100
             self.demand_elec_tot.loc[(self.demand_elec_tot.index.hour>self.HP_start) & 
                                      (self.demand_elec_tot.index.hour<self.HP_end),'cost']= \
                                                    (self.Tr_r_HP+ \
-                                                    self.Tr_r_abo*12/365/24*100+ \
-                                                    self.Tr_r_Pw*self.pic_elec_demand/365/24*100+ \
+                                                    self.Tr_r_abo*12/self.demand_elec_tot['elecCons'].sum()*100+ \
+                                                    self.Tr_r_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                                     self.Tr_N_HP+ \
-                                                    self.Tr_N_Pw*self.pic_elec_demand/365/24*100+ \
+                                                    self.Tr_N_Pw*self.pic_elec_demand/self.demand_elec_tot['elecCons'].sum()*100+ \
                                                     self.Taxes)/100
             self.demand_elec_tot.cost=self.demand_elec_tot['cost']+self.spot.cost.values
         try:
@@ -1161,14 +1161,16 @@ class weather:
             use_dtw_flag=True
         elif self.cluster_method=='kshape':
             cl_mt='kshape' #NOT WORKING
-
-        clustering_instance.do_clustering(clustering_vars, 
-                                          method=cl_mt,
-                                          use_dtw=use_dtw_flag, #not working
-                                          use_autoencoder=False)#not working
+    
+        # clustering_instance.do_clustering_h(clustering_vars, 
+        #                                   method=cl_mt,
+        #                                   use_dtw=use_dtw_flag, #not working
+        #                                   use_autoencoder=False)#not working
         
+        clustering_instance.do_clustering_h(clustering_vars, )#not working
         
         # clustering_input = self.cluster_DB.loc[:, clustering_vars]
+        self.cluster_DB=clustering_instance.cluster_DB
         self.meteo_cluster = clustering_instance.cluster_centers_
         self.code_BK=clustering_instance.code_BK
         """locate nearest days to clusters and compute bin
@@ -1186,29 +1188,6 @@ class weather:
             labels.append(nearest_index)
             lab_indx.append(i)
             lab_d.append(distances[nearest_index][0])
-                # """Normalize input data and perform clustering
-                # """
-                # # clustering_input_norm = vq.whiten(clustering_input)
-                # clustering_input_norm = whiten(clustering_input)
-                # # Apply PCA for dimensionality reduction
-                # pca = PCA(n_components=0.95)  # Keep 95% of variance
-                # clustering_input_pca = pca.fit_transform(clustering_input_norm)
-            
-                
-                # # self.meteo_cluster, self.code_BK = vq.kmeans2(
-                #     # clustering_input_norm, self.n_cluster, iter=100, thresh=1e-5, minit="++")
-                # self.meteo_cluster, self.code_BK = kmeans2(clustering_input_pca, self.n_cluster, iter=100, thresh=1e-5, minit="++")
-        
-                # """locate nearest days to clusters and compute bin
-                # """
-                # labels = []
-                # lab_indx = []
-                # lab_d = []
-                # for i in range(self.n_cluster):
-                #     cl, d = vq(clustering_input_pca, [self.meteo_cluster[i]])
-                #     labels.append(d.argmin())
-                #     lab_indx.append(i)
-                #     lab_d.append(d.min())
 
         """create clustering result table
         """

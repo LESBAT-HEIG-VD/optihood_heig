@@ -68,9 +68,9 @@ class TimeSeriesClustering:
                 distance_matrix[i, j] = distance_matrix[j, i] = distance
         return distance_matrix
 
-    def normalize_data(self, df, clustering_vars):
+    def normalize_data(self, df ):
         scaler = StandardScaler()
-        return scaler.fit_transform(df[clustering_vars])
+        return scaler.fit_transform(df)
 
     def apply_pca(self, data, n_components=0.95):
         pca = PCA(n_components=n_components)
@@ -162,7 +162,12 @@ class TimeSeriesClustering:
         # self.postprocessing_clusters()
         return None
     
-    def do_clustering_h(self, clustering_vars, method="kmeans", use_dtw=False, use_autoencoder=False, use_seasonal_decomp=False):
+    # Define the function to flatten the 24-hour data into a single row per day
+    def flatten_daily_profiles(self,group):
+        # Convert the 24-hour group to a single 1D array (24 values per feature)
+        return pd.Series(group.values.flatten())
+    
+    def do_clustering_hh(self, clustering_vars, method="kmeans", use_dtw=False, use_autoencoder=False, use_seasonal_decomp=False):
         # Resample and process the data
         self.meteo['week_end'] = [1000 if d.weekday() >= 5 else 0 for d in self.meteo.index]
         
@@ -172,12 +177,17 @@ class TimeSeriesClustering:
             self.cluster_DB = pd.merge(self.meteo, self.agg_demand, how='inner', left_index=True, right_index=True)
         
         self.cluster_DB.drop(columns=['time.yy', 'time.mm', 'time.dd', 'time.hh'],inplace=True)
-        # Convert the data into daily profiles
-        self.clustering_input = self.cluster_DB.groupby(self.cluster_DB.index.date).apply(lambda df: df.values.flatten()) 
-        n_features = len(self.cluster_DB.columns)
+        # Reshape the data into daily profiles (one row per day, 24 columns for each variable)
+        daily_weather_profiles = self.cluster_DB.loc[:,clustering_vars].resample('D').apply(self.flatten_daily_profiles)  #.apply(lambda x: x.values).apply(pd.Series)
+        # Renaming columns for clarity (24 hours for each variable)
+        hourly_columns = [f'{var}_Hour_{i}' for var in clustering_vars for i in range(24)]
+        daily_weather_profiles.columns = hourly_columns
+        
+        self.clustering_input=daily_weather_profiles
+        n_features = len( clustering_vars) 
         
         # Convert to a numpy array
-        self.clustering_input = np.array(self.clustering_input.tolist()) 
+        # self.clustering_input = np.array(self.clustering_input.tolist()) 
         
         # Calculate n_days explicitly based on the number of grouped days
         n_days = len(np.unique(pd.to_datetime(self.cluster_DB.index).date))  # Count the number of unique days
@@ -222,14 +232,14 @@ class TimeSeriesClustering:
             # self.clustering_input = self.clustering_input_reshaped.reshape((n_days, 24 * encoding_dim))
             self.clustering_input = self.clustering_input_reshaped
         else:
-            self.clustering_input = self.normalize_data(self.clustering_input, clustering_vars)
-            
+            normalized_weather_profiles = self.normalize_data(daily_weather_profiles)
+            # Convert back to a DataFrame
+            self.clustering_input = pd.DataFrame(normalized_weather_profiles, index=daily_weather_profiles.index, columns=daily_weather_profiles.columns)
                         
-            # Reshape for PCA or other clustering methods that expect 2D input
-            self.clustering_input = self.clustering_input.reshape((n_days, 24 * n_features))
+            
             
             # Apply PCA if not using autoencoder
-            self.clustering_input = self.apply_pca(self.clustering_input)
+           # self.clustering_input = self.apply_pca(self.clustering_input)
         
         # DTW or KShape handling
         if use_dtw:
@@ -265,14 +275,57 @@ class TimeSeriesClustering:
             self.clustering_input_reshaped = self.clustering_input.reshape((n_days, 24, n_features))
             clustering_input_flattened = self.clustering_input_reshaped.reshape((n_days, -1))
             
-            model = KMeans(n_clusters=self.n_clusters)
-            self.code_BK = model.fit_predict(clustering_input_flattened)
+            model = KMeans(n_clusters=self.n_clusters,random_state=42)
+            model.fit(self.clustering_input)
+            self.code_BK = model.fit_predict(self.clustering_input)
+            #cluster_labels = model.labels_
             
             self.cluster_centers_ = np.zeros((self.n_clusters, 24, n_features))
             for i in range(self.n_clusters):
                 cluster_members = self.clustering_input_reshaped[self.code_BK == i]
                 self.cluster_centers_[i] = np.mean(cluster_members, axis=0)
         
+        return None
+    
+    def do_clustering_h(self, clustering_vars):
+        # Resample and process the data
+        self.meteo['week_end'] = [1000 if d.weekday() >= 5 else 0 for d in self.meteo.index]
+        
+        try:
+            self.cluster_DB = pd.merge(self.meteo.tz_localize(None), self.agg_demand, how='inner', left_index=True, right_index=True)
+        except:
+            self.cluster_DB = pd.merge(self.meteo, self.agg_demand, how='inner', left_index=True, right_index=True)
+        
+        self.cluster_DB.drop(columns=['time.yy', 'time.mm', 'time.dd', 'time.hh'],inplace=True)
+        # Reshape the data into daily profiles (one row per day, 24 columns per variable)
+        daily_weather_profiles = self.cluster_DB.loc[:, clustering_vars].resample('D').apply(self.flatten_daily_profiles)
+        
+        # Create new column names for clarity, indicating hours for each variable
+        hourly_columns = [f'{var}_Hour_{i}' for var in clustering_vars for i in range(24)]
+        daily_weather_profiles.columns = hourly_columns
+        
+        # Normalize the data for clustering
+        self.clustering_input = self.normalize_data(daily_weather_profiles)
+        
+        # Apply PCA to reduce the dimensionality while keeping the 24-hour structure
+        pca_model = PCA(n_components=0.95)
+        pca_result = pca_model.fit_transform(self.clustering_input)
+        
+        # Perform clustering on the reduced features
+        model = KMeans(n_clusters=self.n_clusters, random_state=42)
+        self.code_BK = model.fit_predict(pca_result)
+        
+        # Calculate cluster centers in the original feature space (24-hour profile)
+        self.cluster_centers_ = np.zeros((self.n_clusters, 24, len(clustering_vars)))
+        
+        # Inverse transform the PCA results to get cluster centers in the original feature space
+        cluster_centers_pca = model.cluster_centers_
+        cluster_centers_original_space = pca_model.inverse_transform(cluster_centers_pca)
+        
+        # Reshape the cluster centers back to the (24 hours, n_features) form for each cluster
+        for i in range(self.n_clusters):
+            self.cluster_centers_[i] = cluster_centers_original_space[i].reshape(24, len(clustering_vars))
+    
         return None
 
 
