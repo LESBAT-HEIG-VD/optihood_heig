@@ -60,11 +60,11 @@ if __name__ == '__main__':
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
     numberOfBuildings = 10
-    cluster_N = [24,48,60,72]
+    cluster_N = [12,24,36,48]
     merge_opt = [True]
     con_opt = ["Con"]  # ["Con","noCon"]
     clst_opt = [True]
-    for cl_mt in ['KMeans']:#,'use_dtw',]:#,'use_dtw']:'kshape','kshape',
+    for cl_hh in [True,False]:#,'use_dtw',]:#,'use_dtw']:'kshape','kshape',
         for clN in cluster_N:
             if clN==0:
                 cl=False
@@ -127,20 +127,25 @@ if __name__ == '__main__':
             N_cl = clN  # number of meteo day clusters
             plot_bool = False  # specify if sankey plots are required
             
-            clustering_vars = ['tre200h0', 'gls', 'pressure', 'week_end',
-                               'electricityDemand', 'spaceHeatingDemand', 'domesticHotWaterDemand']  # columns to use for clustering
-        
+            clustering_vars = ['tre200h0', 
+                               'gls', 
+                                'pressure', 
+                                'week_end',
+                                'electricityDemand', 
+                               'spaceHeatingDemand', 
+                                'domesticHotWaterDemand' # columns to use for clustering
+                                   ]
             
             """ Create meteo file and compute clusters if needed."""
             meteo_data=meteo(source=addr_source,
                              n_clusters=N_cl,
                              cluster=clusterBool,
-                             clustering_vars=[],
+                             clustering_vars=clustering_vars,
                              save_file=True,
                              load_file=False,
                              set_scenario=False,
-                             single_scenario=False,
-                             cluster_method=cl_mt)
+                             single_scenario=True,                             
+                             cl_hh=False)
             # create electricity profile based on Romande Energie tarif
             # or spot profile in electricity_spot.csv
             # options are : "Tarif" or "Spot"
@@ -175,24 +180,43 @@ if __name__ == '__main__':
                 
                 dailyIndex = pd.date_range(start=timePeriod[0],  
                                             end=timePeriod[-1], freq='D')
-                synthetic_year=pd.DataFrame(columns=meteo_data.cluster_DB.columns)
-                for i, day in enumerate(dailyIndex):
-                    # Identify the cluster day based on clusterBook mapping
-                    cluster_day_index = list(cluster.keys())[clusterBook.iloc[i, 0] - 1]
-                    
-                    # Extract the corresponding data from the cluster day
-                    try:
-                        temp = meteo_data.cluster_DB.loc[cluster_day_index, :]
-                    except KeyError:
-                        logging.error(f"Cluster day {cluster_day_index} not found in _clusterDate.")
-                        continue  # Skip the iteration if the cluster day is not found
-                    
-                    # Append the day's results to the list
-                    
-                    synthetic_year = pd.concat([synthetic_year, temp], ignore_index=False)
-                synthetic_year.index=meteo_data.cluster_DB.index
-                synthetic_year.loc[:,['gls','spaceHeatingDemand']].plot()
-                plt.show()
+                if meteo_data.cl_hh==False:
+                    synthetic_year=pd.DataFrame(columns=meteo_data.cluster_DB.columns,
+                                                index=meteo_data.cluster_DB.index)
+                    for i, day in enumerate(dailyIndex):
+                        # Identify the cluster day based on clusterBook mapping
+                        cluster_day_index = list(cluster.keys())[clusterBook.iloc[i, 0]]
+                        
+                        # Extract the corresponding data from the cluster day
+                        try:
+                            temp = meteo_data.cluster_DB.loc[cluster_day_index, :]
+                            synthetic_year.loc[day,:]=temp
+                        except KeyError:
+                            logging.error(f"Cluster day {cluster_day_index} not found in _clusterDate.")
+                            continue  # Skip the iteration if the cluster day is not found
+                        
+                    synthetic_year.loc[:,['gls','spaceHeatingDemand','domesticHotWaterDemand']].plot()
+                    plt.savefig(f'synthetic_year_plot_{N_cl}.png', dpi=300, bbox_inches='tight')
+                    plt.show()
+                else:
+                    synthetic_year=pd.DataFrame(columns=meteo_data.cluster_DB.columns)   
+                
+                    for i, day in enumerate(dailyIndex):
+                        # Identify the cluster day based on clusterBook mapping
+                        cluster_day_index = list(cluster.keys())[clusterBook.iloc[i, 0]]
+                        
+                        # Extract the corresponding data from the cluster day
+                        try:
+                            temp = meteo_data.cluster_DB.loc[cluster_day_index]
+                        except KeyError:
+                            logging.error(f"Cluster day {cluster_day_index} not found in _clusterDate.")
+                            continue  # Skip the iteration if the cluster day is not found
+                        # Append the day's results to the list        
+                        synthetic_year=pd.concat([synthetic_year,temp],axis=0,ignore_index=True)                    
+                    synthetic_year.index=meteo_data.cluster_DB.index
+                    synthetic_year.loc[:,['gls','spaceHeatingDemand','domesticHotWaterDemand']].plot()
+                    plt.savefig(f'synthetic_year_plot_{N_cl}.png', dpi=300, bbox_inches='tight')
+                    plt.show()
                 
             # solver specific command line options
             optimizationOptions = {
@@ -276,7 +300,7 @@ if __name__ == '__main__':
                 network.printEnvImpacts()
         
                 # save results
-                resultFileName = f"results_pareto_mrgON_IamLenz_10_allHP_cluster{clN}_method_h_{cl_mt}" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
+                resultFileName = f"results_pareto_mrgON_IamLenz_10_allHP_cluster{clN}_hh_{cl_hh}" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
         
                 if not os.path.exists(resultFilePath):
                     os.makedirs(resultFilePath)
@@ -323,7 +347,7 @@ if __name__ == '__main__':
             if not os.path.exists(figureFilePath):
                 os.makedirs(figureFilePath)
         
-            figureFileName = f"Pareto_IamLenz_10_allHP_PV_PVT_ST_075TES_mrgON_Cl{clN}_method_h_{cl_mt}.png"
+            figureFileName = f"Pareto_IamLenz_10_allHP_PV_PVT_ST_075TES_mrgON_Cl{clN}_hh_{cl_hh}.png"
         
             plotParetoFront(os.path.join(figureFilePath, figureFileName), costsList, envList)
         

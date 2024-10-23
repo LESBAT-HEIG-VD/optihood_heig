@@ -29,18 +29,7 @@ class SolarCollector:
                 self.collectors_eta_c.append(flatPlateCollectorData['eta_c'])
                 self.collectors_heat[connector] = flatPlateCollectorData['collectors_heat'] / 1000  # kWh per m²
             else:
-                # flatPlateCollectorData = []
-                # for i in range(len(delta_temp_n)):
-                #     data = flat_plate_precalc(
-                #         latitude, longitude, collector_tilt, collector_azimuth, 
-                #         eta_0, a_1, a_2, temp_collector_inlet[i], delta_temp_n[i], 
-                #         irradiance_global, irradiance_diffuse, temp_amb_col
-                #     )
-                #     flatPlateCollectorData.append(data)
-                #     self.collectors_eta_c.append(data['eta_c'])
-                #     self.collectors_heat[connector[i]] = data['collectors_heat'] / 1000  # kWh per m²
-                    
-                
+                               
                 flatPlateCollectorData_sh = flat_plate_precalc(
                     latitude, longitude, collector_tilt, collector_azimuth, 
                     eta_0, a_1, a_2, temp_collector_inlet[0], delta_temp_n[0], 
@@ -92,26 +81,7 @@ class SolarCollector:
                 self.collectors_eta_c.append(avg_eta_c['eta_c'])
                 self.collectors_heat[connector] = avg_collectors_heat['collectors_heat'] / 1000  # kWh per m²
             else:
-                # flatPlateCollectorData = []
-                # self.collectors_eta_c = []
-                # self.collectors_heat = {}
-                # for i in range(len(delta_temp_n)):
-                #     # Calculate for azimuth +90
-                #     flatPlateCollectorData1 = flat_plate_precalc(
-                #         latitude, longitude, collector_tilt, collector_azimuth + 90, eta_0, a_1, a_2, 
-                #         temp_collector_inlet[i], delta_temp_n[i], irradiance_global, irradiance_diffuse, temp_amb_col
-                #     )
-                #     # Calculate for azimuth -90
-                #     flatPlateCollectorData2 = flat_plate_precalc(
-                #         latitude, longitude, collector_tilt, collector_azimuth - 90, eta_0, a_1, a_2, 
-                #         temp_collector_inlet[i], delta_temp_n[i], irradiance_global, irradiance_diffuse, temp_amb_col
-                #     )
-                #     # Calculate average efficiency (eta_c) and heat
-                #     avg_eta_c = (flatPlateCollectorData1['eta_c'] + flatPlateCollectorData2['eta_c']) / 2
-                #     avg_collectors_heat = (flatPlateCollectorData1['collectors_heat'] + flatPlateCollectorData2['collectors_heat']) / 2
-                #     self.collectors_eta_c.append(avg_eta_c)
-                    # self.collectors_heat[connector[i]] = avg_collectors_heat / 1000  # Convert to kWh per m²
-                    
+                 
                 # Calculate for azimuth +90
                 flatPlateCollectorData_sh1 = flat_plate_precalc(
                     latitude, longitude, collector_tilt, collector_azimuth+90, 

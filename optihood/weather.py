@@ -22,7 +22,7 @@ from optihood.calpinage import Calpinage_light as cp
 from optihood.TimeSeriesClustering import TimeSeriesClustering as TSc
 import math
 from scipy.spatial.distance import cdist
-
+from tslearn.metrics import dtw
 
 
 class weather:
@@ -46,7 +46,8 @@ class weather:
                  load_file=False,
                  set_scenario=True,
                  single_scenario=True,
-                 cluster_method='kshape'
+                 
+                 cl_hh=False,
                  ):
         """
         Class constructor. Geographic info are taken from the source file
@@ -74,7 +75,8 @@ class weather:
         self.lb_wnd_d = "wind_direction"  # dkl010z0
         self.lb_IR = "IR"                 # oli000z0
         self.n_cluster = n_clusters
-        self.cluster_method=cluster_method
+
+        self.cl_hh=cl_hh                    # bool to have clustering on day or hours of a day
 
         if soil_param == True:
             self.T_soil_min = T_soil_min
@@ -793,7 +795,7 @@ class weather:
         worksheet = workbook.sheet_by_name('solar')
         wb = copy(workbook)
         w_sheet = wb.get_sheet('solar')
-        for i in range(1, 100):
+        for i in range(1, 140):
             for j in range(50):
                 w_sheet.write(i, j, label=None)
         header = ['label',
@@ -1154,52 +1156,86 @@ class weather:
         clustering_instance = TSc(self.meteo, 
                                   self.agg_demand,
                                   n_clusters=self.n_cluster)
-        # Perform clustering with K-Shape
-        cl_mt='KMeans'
-        use_dtw_flag=False
-        if self.cluster_method=='use_dtw':
-            use_dtw_flag=True
-        elif self.cluster_method=='kshape':
-            cl_mt='kshape' #NOT WORKING
+        
     
         # clustering_instance.do_clustering_h(clustering_vars, 
         #                                   method=cl_mt,
         #                                   use_dtw=use_dtw_flag, #not working
         #                                   use_autoencoder=False)#not working
+        if self.cl_hh:
+            
+            clustering_instance.do_clustering_hh(clustering_vars, )
+            n_clusters = clustering_instance.cluster_centers_.shape[0]
+            n_days = clustering_instance.reshaped_cl_data.shape[0]
+            self.code_BK=clustering_instance.code_BK
+            self.cluster_DB=clustering_instance.cluster_DB
+            # self.meteo_cluster = clustering_instance.cluster_centers_
+            # Dictionary to store the nearest day for each cluster center
+            nearest_days = {}
+            labels = []
+            lab_indx = []
+            lab_d = []
+            # Step 1: For each cluster center
+            for i in range(self.n_cluster):
+                min_dtw_distance = float('inf')  # Initialize to a large value
+                nearest_day = None
+                
+                # Step 2: Compare with each day in the original data
+                for day_idx in range(n_days):
+                    # Compute the DTW distance between the cluster center and the day's profile
+                    dtw_distance = dtw(clustering_instance.cluster_centers_[i], clustering_instance.reshaped_cl_data[day_idx])
+                    
+                    # Step 3: Keep track of the day with the smallest DTW distance
+                    if dtw_distance < min_dtw_distance and day_idx not in nearest_days:
+                        min_dtw_distance = dtw_distance
+                        nearest_day = day_idx
+                
+                # Step 4: Store the nearest day for the current cluster center
+                nearest_days[i] = nearest_day
+                labels.append(nearest_day)
+                lab_indx.append(i)
+                lab_d.append(min_dtw_distance)
+            self.results = pd.DataFrame(index=self.meteo_daily.index[labels])
+            self.results['labels'] = lab_indx
+            self.results['count'] = pd.Series(
+                self.code_BK).value_counts().loc[lab_indx].values
+            self.results['distances'] = lab_d
+        else:
+            clustering_instance.do_clustering(clustering_vars, )#not working
+        # 
         
-        clustering_instance.do_clustering_h(clustering_vars, )#not working
-        
-        # clustering_input = self.cluster_DB.loc[:, clustering_vars]
-        self.cluster_DB=clustering_instance.cluster_DB
-        self.meteo_cluster = clustering_instance.cluster_centers_
-        self.code_BK=clustering_instance.code_BK
-        """locate nearest days to clusters and compute bin
-        """
-        labels = []
-        lab_indx = []
-        lab_d = []
-        for i in range(self.n_cluster):
-            # Get the cluster center for the current cluster
-            cluster_center = self.meteo_cluster[i]  # This now holds the actual cluster center
-        
-            # Calculate distances from all days to the cluster center
-            distances = cdist(clustering_instance.clustering_input, cluster_center.reshape(1, -1), metric='euclidean')
-            nearest_index = np.argmin(distances)  # Find the index of the nearest day
-            labels.append(nearest_index)
-            lab_indx.append(i)
-            lab_d.append(distances[nearest_index][0])
-
-        """create clustering result table
-        """
-        # self.results = pd.DataFrame({'nearest_day_index': labels, 'cluster_label': lab_indx, 'distance': lab_d})
-
-        self.results = pd.DataFrame(index=self.meteo_daily.index[labels])
-        self.results['labels'] = lab_indx
-        self.results['count'] = pd.Series(
-            self.code_BK).value_counts().loc[lab_indx].values
-        self.results['distances'] = lab_d
-        # self.pca = pca  # Save the PCA model for later use if needed
+            # clustering_input = self.cluster_DB.loc[:, clustering_vars]
+            self.cluster_DB=clustering_instance.cluster_DB
+            self.meteo_cluster = clustering_instance.cluster_centers_
+            self.code_BK=clustering_instance.code_BK
+            """locate nearest days to clusters and compute bin
+            """
+            labels = []
+            lab_indx = []
+            lab_d = []
+            for i in range(self.n_cluster):
+                # Get the cluster center for the current cluster
+                cluster_center = self.meteo_cluster[i]  # This now holds the actual cluster center
+                cluster_center=cluster_center.reshape(1,-1)
+            
+                # Calculate distances from all days to the cluster center
+                distances = cdist(clustering_instance.clustering_input, cluster_center, metric='euclidean')
+                nearest_index = np.argmin(distances)  # Find the index of the nearest day
+                labels.append(nearest_index)
+                lab_indx.append(i)
+                lab_d.append(distances[nearest_index][0])
     
+            """create clustering result table
+            """
+            # self.results = pd.DataFrame({'nearest_day_index': labels, 'cluster_label': lab_indx, 'distance': lab_d})
+    
+            self.results = pd.DataFrame(index=self.meteo_daily.index[labels])
+            self.results['labels'] = lab_indx
+            self.results['count'] = pd.Series(
+                self.code_BK).value_counts().loc[lab_indx].values
+            self.results['distances'] = lab_d
+            # self.pca = pca  # Save the PCA model for later use if needed
+        
         return None
 
 

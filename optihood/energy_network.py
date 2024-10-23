@@ -898,7 +898,7 @@ class EnergyNetworkClass(solph.EnergySystem):
             # For each day in the real year, assign the corresponding cluster day
             for i, day in enumerate(dailyIndex):
                 # Identify the cluster day based on clusterBook mapping
-                cluster_day_index = list(clusterSize.keys())[clusterBook.iloc[i, 0] - 1]
+                cluster_day_index = list(clusterSize.keys())[clusterBook.iloc[i, 0]]
                 
                 # Extract the corresponding data from the cluster day
                 try:
@@ -1211,6 +1211,11 @@ class EnergyNetworkClass(solph.EnergySystem):
                 invest = capacitiesInvestedTransformers[("pv__" + buildingLabel, "electricityProdBus__" + buildingLabel)]
                 if invest > -0.05:
                     print("Invested in {:.1f} kWp  PV.".format(invest))
+            if ("elSource_pvt__" + buildingLabel, "electricityProdBus__" + buildingLabel) in capacitiesInvestedTransformers:
+                invest = capacitiesInvestedTransformers[("elSource_pvt__" + buildingLabel, "electricityProdBus__" + buildingLabel)]
+                if invest > -0.05:
+                    print("Invested in {:.1f} kWp of PVT collector.".format(invest))
+
             if ("heatSource_SHpvt__" + buildingLabel, "pvtConnectBusSH__" + buildingLabel) in capacitiesInvestedTransformers:
                 invest = capacitiesInvestedTransformers[("heatSource_SHpvt__" + buildingLabel, "pvtConnectBusSH__" + buildingLabel)]
                 if invest > -0.05:
@@ -1234,6 +1239,16 @@ class EnergyNetworkClass(solph.EnergySystem):
                     invest = capacitiesInvestedTransformers[("pv_" + str(n) + "__" + buildingLabel, "electricityProdBus__" + buildingLabel)]
                 # if invest > 0.05:
                     print("Invested in {:.1f} kWp of PV_{}.".format(invest,str(n)))
+            if ("elSource_pvt_1__" + buildingLabel, "electricityProdBus__" + buildingLabel) in capacitiesInvestedTransformers:
+                pvt_counter=0
+                for key, value in capacitiesInvestedTransformers.items():   # iter on both keys and values                    
+                    if key[0].startswith('elSource_pvt_') and key[0].endswith(buildingLabel):
+                        pvt_counter+=1
+                for n in range(1,1+pvt_counter):
+                    invest = capacitiesInvestedTransformers[("elSource_pvt_" + str(n) + "__" + buildingLabel, "electricityProdBus__" + buildingLabel)]
+                # if invest > 0.05:
+                    print("Invested in {:.1f} kWp of  PVT_{}".format(invest,str(n)))
+            
             if ("heatSource_SHpvt_1__" + buildingLabel, "pvtConnectBusSH__" + buildingLabel) in capacitiesInvestedTransformers:
                 pvt_counter=0
                 for key, value in capacitiesInvestedTransformers.items():   # iter on both keys and values                    

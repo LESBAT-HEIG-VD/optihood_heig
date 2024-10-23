@@ -292,33 +292,29 @@ def PVTElectricalThermalCapacityConstraint(om, numBuildings):
         T2Capacity = [om.InvestmentFlowBlock.invest[i, o] for (i, o) in pvtT2OutFlows if ((f'__Building{b}') in o.label)]
         areaUnitCapEl = [getattr(om.flows[i, o].investment, 'space_el') for (i, o) in pvtElOutFlows if ((f'__Building{b}') in o.label)]
         areaUnitCapSh = [getattr(om.flows[i, o].investment, 'space') for (i, o) in pvtShOutFlows if ((f'__Building{b}') in o.label)]
-        if elCapacity or shCapacity:
-            elCapacity = elCapacity[0]
-            shCapacity = shCapacity[0]
-            areaUnitCapEl = areaUnitCapEl[0]
-            areaUnitCapSh = areaUnitCapSh[0]
-            expr1 = (elCapacity * areaUnitCapEl == shCapacity * areaUnitCapSh)
-            setattr(
-                om,
-                "PVTSizeConstrElTh_B" + str(b),
-                pyo.Constraint(expr=expr1),
-            )
-            if dhwCapacity:
-                dhwCapacity = dhwCapacity[0]
-                expr2 = (dhwCapacity == shCapacity)
+        if elCapacity or shCapacity:      
+            for elC,shC,Ael,Ash,i in zip(elCapacity,shCapacity,areaUnitCapEl,areaUnitCapSh,range(len(elCapacity))):
+
+                expr1 = (elC * Ael == shC * Ash)
                 setattr(
                     om,
-                    "PVTSizeConstrDhwSh_B" + str(b),
-                    pyo.Constraint(expr=expr2),
+                    "PVTSizeConstrElTh_" + str(i) + "_B" + str(b),
+                    pyo.Constraint(expr=expr1),
                 )
-            if T2Capacity:
-                T2Capacity = T2Capacity[0]
-                expr3 = (T2Capacity == shCapacity)
-                setattr(
-                    om,
-                    "PVTSizeConstrT2Sh_B" + str(b),
-                    pyo.Constraint(expr=expr3),
-                )
+                if dhwCapacity:
+                    expr2 = (dhwCapacity[i] == shC)
+                    setattr(
+                        om,
+                        "PVTSizeConstrDhwSh_" + str(i) + "_B" + str(b),
+                        pyo.Constraint(expr=expr2),
+                    )
+                if T2Capacity:
+                    expr3 = (T2Capacity[i] == shC)
+                    setattr(
+                        om,
+                        "PVTSizeConstrT2Sh_" + str(i) + "_B" + str(b),
+                        pyo.Constraint(expr=expr3),
+                    )
     return om
 
 def STThermalCapacityConstraint(om, numBuildings):
@@ -331,23 +327,25 @@ def STThermalCapacityConstraint(om, numBuildings):
         T2Capacity = [om.InvestmentFlowBlock.invest[i, o] for (i, o) in stT2OutFlows if ((f'__Building{b}') in o.label)]
         areaUnitCapSh = [getattr(om.flows[i, o].investment, 'space') for (i, o) in stShOutFlows if ((f'__Building{b}') in o.label)]
         if shCapacity:
-            shCapacity = shCapacity[0]
-            areaUnitCapSh = areaUnitCapSh[0]
-            
-            if dhwCapacity:
-                dhwCapacity = dhwCapacity[0]
-                expr2 = (dhwCapacity == shCapacity)
-                setattr(
-                    om,
-                    "STSizeConstrDhwSh_B" + str(b),
-                    pyo.Constraint(expr=expr2),
-                )
-            if T2Capacity:
-                T2Capacity = T2Capacity[0]
-                expr3 = (T2Capacity == shCapacity)
-                setattr(
-                    om,
-                    "STSizeConstrT2Sh_B" + str(b),
-                    pyo.Constraint(expr=expr3),
-                )
+            for shC,Ash,i in zip(shCapacity,areaUnitCapSh,range(len(shCapacity))):
+
+                # shCapacity = shCapacity[i]
+                # areaUnitCapSh = areaUnitCapSh[0]
+                
+                if dhwCapacity:
+                    # dhwCapacity = dhwCapacity[i]
+                    expr2 = (dhwCapacity[i] == shC)
+                    setattr(
+                        om,
+                        "STSizeConstrDhwSh_" + str(i) + "_B" + str(b),
+                        pyo.Constraint(expr=expr2),
+                    )
+                if T2Capacity:
+                    # T2Capacity = T2Capacity[i]
+                    expr3 = (T2Capacity[i] == shC)
+                    setattr(
+                        om,
+                        "STSizeConstrT2Sh_" + str(i) + "_B" + str(b),
+                        pyo.Constraint(expr=expr3),
+                    )
     return om
