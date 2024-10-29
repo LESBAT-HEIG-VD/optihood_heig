@@ -61,7 +61,7 @@ if __name__ == '__main__':
         numberOfOptimizations=numberOfOptimizations+1
     numberOfBuildings = 10
     cluster_N = [12,24,36,48]
-    merge_opt = [True]
+
     con_opt = ["Con"]  # ["Con","noCon"]
     clst_opt = [True]
     for cl_hh in [True,False]:#,'use_dtw',]:#,'use_dtw']:'kshape','kshape',
@@ -86,14 +86,10 @@ if __name__ == '__main__':
             inputFilePath = curDir / ".." / "excels" / "IamLenz"
             
             # Input OF CLUSTERING STUDY: inputfileName = "scenario_IamLenz_10_075_TES_GSHP_PV_ST_PVT_mergeON.xls"
-            inputfileName="scenario_IamLenz_TES_allHP_mrgON_CostsOK.xls"
+            inputfileName="scenario_IamLenz_TES_allHP_mrgOFF_CostsOK.xls"
             # inputfileName = "scenario_IamLenz_2_costs_075_TES_GSHP_PV_ST_PVT-CAD.xls"
         
             resultFilePath = r"..\results"
-            # resultFileName = "results_TES_Final_10bld_allHP_PV_PVT_ST_TES.xlsx"
-            resultFileName = "results_IamLenz_TES_mrgON_10.xlsx"
-            # resultFileName = "results_TES_env_" + str(clN) + "_TES_allHP_10bld.xlsx"
-        
             # create weather file based on coordinates and PVGIS or supplying file to read
             addr_source = os.path.join(inputFilePath, inputfileName)
         
@@ -101,7 +97,7 @@ if __name__ == '__main__':
             # set a time period for the optimization problem according to the size of clusers
             timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-12-31 23:00:00", freq="60min")
             optimizationType = "costs"  # set as "env" for environmental optimization
-            mergeLinkBuses_bool = True
+            mergeLinkBuses_bool = False
             tL_bool = True  # temperature levels flag
             """ if tL_bool==False -> single dT and Tinlet for solar technologies
              and if True and stratified storage is interesting then mergeBuses
@@ -143,7 +139,7 @@ if __name__ == '__main__':
                              clustering_vars=clustering_vars,
                              save_file=True,
                              load_file=False,
-                             set_scenario=False,
+                             set_scenario=True,
                              single_scenario=True,                             
                              cl_hh=False)
             # create electricity profile based on Romande Energie tarif
@@ -175,7 +171,7 @@ if __name__ == '__main__':
             elif clusterBool==False: #if no cluster is required, cluster={}
                 cluster={}
                 clusterBook=pd.DataFrame()
-            cluster_plott_bool=True
+            cluster_plott_bool=False
             if cluster_plott_bool==True:
                 
                 dailyIndex = pd.date_range(start=timePeriod[0],  
@@ -300,7 +296,7 @@ if __name__ == '__main__':
                 network.printEnvImpacts()
         
                 # save results
-                resultFileName = f"results_pareto_mrgON_IamLenz_10_allHP_cluster{clN}_hh_{cl_hh}" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
+                resultFileName = f"results_pareto_mrgOFF_IamLenz_10_allHP_cluster{clN}_hh_{cl_hh}" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
         
                 if not os.path.exists(resultFilePath):
                     os.makedirs(resultFilePath)
@@ -347,7 +343,7 @@ if __name__ == '__main__':
             if not os.path.exists(figureFilePath):
                 os.makedirs(figureFilePath)
         
-            figureFileName = f"Pareto_IamLenz_10_allHP_PV_PVT_ST_075TES_mrgON_Cl{clN}_hh_{cl_hh}.png"
+            figureFileName = f"Pareto_IamLenz_10_allHP_PV_PVT_ST_075TES_mrgOFF_Cl{clN}_hh_{cl_hh}.png"
         
             plotParetoFront(os.path.join(figureFilePath, figureFileName), costsList, envList)
         
