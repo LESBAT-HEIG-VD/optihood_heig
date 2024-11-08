@@ -875,7 +875,7 @@ class EnergyNetworkClass(solph.EnergySystem):
     #         self._optimizationResults[flow]['sequences'] = extrapolated_results
     #     logging.info("Cluster post-processing finished")
     #     return None
-    def _postprocessingClusters(self, clusterSize, clusterBook):
+    def _postprocessingClusters_old(self, clusterSize, clusterBook):
         logging.info("Cluster post-processing started")
     
         # Get the flows that are non-None in _optimizationResults
@@ -922,7 +922,49 @@ class EnergyNetworkClass(solph.EnergySystem):
         
         logging.info("Cluster post-processing finished")
         return None
-
+    
+    def _postprocessingClusters(self, clusterSize, clusterBook):
+        logging.info("Cluster post-processing started")
+        
+        # Precompute cluster day indices for quick lookup
+        cluster_day_indices = [list(clusterSize.keys())[i] for i in clusterBook.iloc[:, 0]]
+        
+        # Extract the flows and real daily index
+        flows = [flow for flow in self._optimizationResults.keys() if flow[1] is not None]
+        dailyIndex = pd.period_range(
+            start=datetime(self._timeIndexReal.year[0], 
+                           self._timeIndexReal.month[0], 
+                           self._timeIndexReal.day[0]), 
+            freq='D', 
+            periods=(self._timeIndexReal[-1] - self._timeIndexReal[0] + timedelta(seconds=3600)).days
+        )
+        
+        # Check for available dates in _clusterDate in advance to avoid KeyErrors
+        available_cluster_dates = set(self._clusterDate.keys())
+        
+        # Loop over each flow
+        for flow in flows:
+            # Directly initialize an empty DataFrame for the extrapolated results
+            extrapolated_results = pd.DataFrame(index=self._timeIndexReal, columns=['flow'])
+            
+            # Iterate over each day to map cluster days
+            for i, day in enumerate(dailyIndex):
+                cluster_day_index = cluster_day_indices[i]
+                
+                # Check if cluster day is available, otherwise skip
+                if cluster_day_index not in available_cluster_dates:
+                    logging.error(f"Cluster day {cluster_day_index} not found in _clusterDate.")
+                    continue
+                
+                # Assign the extracted sequence to the correct daily slice in extrapolated_results
+                extrapolated_results.loc[day.start_time:day.end_time, 'flow'] = \
+                        self._optimizationResults[flow]['sequences'].loc[self._clusterDate[cluster_day_index], :].values.ravel()
+            
+            # Update the results in the optimization dictionary
+            self._optimizationResults[flow]['sequences'] = extrapolated_results
+        
+        logging.info("Cluster post-processing finished")
+        return None
     def _calculateResultsPerBuilding(self, mergeLinkBuses):
         for b in self.__buildings:
             buildingLabel = b.getBuildingLabel()

@@ -98,7 +98,7 @@ def connectInvestmentRule(om):
     return om
 
 
-def environmentalImpactlimit(om, keyword1, keyword2,limit=None,clusterSZ={}):
+def environmentalImpactlimit_old(om, keyword1, keyword2,limit=None,clusterSZ={}):
     """
     Based on: oemof.solph.constraints.emission_limit
     Function to limit the environmental impacts during the multi-objective optimization
@@ -173,6 +173,45 @@ def environmentalImpactlimit(om, keyword1, keyword2,limit=None,clusterSZ={}):
 
     return om, flows, transformerFlowCapacityDictNonConvex, storageCapacityDict
 
+def environmentalImpactlimit(om, keyword1, keyword2, limit=None, clusterSZ={}):
+    flows, transformerFlowCapacityDictNonConvex, transformerFlowCapacityDictConvex, storageCapacityDict = {}, {}, {}, {}
+    for (i, o) in om.flows:
+        flow = om.flows[i, o]
+        if hasattr(flow, keyword1):
+            flows[(i, o)] = flow
+        if hasattr(flow.investment, keyword2):
+            if flow.nonconvex:
+                transformerFlowCapacityDictNonConvex[(i, o)] = flow.investment
+            else:
+                transformerFlowCapacityDictConvex[(i, o)] = flow.investment
+
+    if hasattr(om, 'GenericInvestmentStorageBlock'):
+        for x in om.GenericInvestmentStorageBlock.INVESTSTORAGES:
+            if hasattr(x.investment, keyword2):
+                storageCapacityDict[x] = om.GenericInvestmentStorageBlock.invest[x]
+
+    cluster_vector = [clusterSZ.get(d, 1) for d in clusterSZ for _ in range(24)] if clusterSZ else [1] * len(om.TIMESTEPS)
+
+    om.totalEnvironmentalImpact = pyo.Expression(
+        expr=sum(
+            om.flow[inflow, outflow, t] * om.timeincrement[t] * sequence(getattr(flows[inflow, outflow], keyword1))[t] * cluster_vector[t]
+            for (inflow, outflow) in flows for t in om.TIMESTEPS
+        ) + sum(
+            om.InvestmentFlowBlock.invest[inflow, outflow] * getattr(invest, keyword2)
+            for (inflow, outflow), invest in transformerFlowCapacityDictConvex.items()
+        ) + sum(
+            om.InvestNonConvexFlowBlock.invest[inflow, outflow] * getattr(invest, keyword2)
+            for (inflow, outflow), invest in transformerFlowCapacityDictNonConvex.items()
+        ) + sum(
+            om.GenericInvestmentStorageBlock.invest[x] * getattr(x.investment, keyword2) for x in storageCapacityDict
+        )
+    )
+
+    om.totalEnvironmentalImpact_constraint = pyo.Constraint(expr=(om.totalEnvironmentalImpact <= limit))
+    
+    transformerFlowCapacityDictNonConvex.update(transformerFlowCapacityDictConvex)
+
+    return om, flows, transformerFlowCapacityDictNonConvex, storageCapacityDict
 
 def roof_area_limit(om, keyword1, keyword2, nb):
     r"""
