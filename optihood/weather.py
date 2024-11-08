@@ -390,8 +390,13 @@ class weather:
             '''
         self.df_hood.loc[:, 'long_side'] = self.df_hood.loc[:, 'long_side'] - \
             self.df_hood.loc[:, 'busy_area']/self.df_hood.loc[:, 'short_side']
-        self.df_hood.loc[:, 'roof_area'] = self.df_hood.loc[:,
-                                                            'long_side']*self.df_hood.loc[:, 'short_side']
+        # self.df_hood.loc[:, 'roof_area'] = self.df_hood.loc[:,'long_side']*self.df_hood.loc[:, 'short_side']
+        self.df_hood['roof_area'] = np.where(
+            self.df_hood['Roof_tilt'] == 0,
+            self.df_hood['long_side'] * self.df_hood['short_side'],
+            self.df_hood['long_side'] * (self.df_hood['short_side'] / 2)
+        )
+
         """
             once the building geometry is defined, the class Calpinage can 
             be called to compute the roof coverage ratio, the number of solar panels
