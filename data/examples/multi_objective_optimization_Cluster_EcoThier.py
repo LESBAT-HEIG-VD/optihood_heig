@@ -60,7 +60,7 @@ if __name__ == '__main__':
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
     numberOfBuildings = 3
-    cluster_N = [24,36,48]
+    cluster_N = [0]#[24,36,48]
 
     con_opt = ["Con"]  # ["Con","noCon"]
     clst_opt = [True]
@@ -87,7 +87,7 @@ if __name__ == '__main__':
             inputFilePath = curDir / ".." / "excels" / "EcoThierrens"
             
             # Input OF CLUSTERING STUDY: inputfileName = "scenario_IamLenz_10_075_TES_GSHP_PV_ST_PVT_mergeON.xls"
-            inputfileName="scenario_EcoThierrens_TES_HP_mrgON_CostsOK_real.xls"
+            inputfileName="scenario_EcoThierrens_TES_HP_mrgON_CostsOK_real2.xls"
             # inputfileName = "scenario_IamLenz_2_costs_075_TES_GSHP_PV_ST_PVT-CAD.xls"
         
             resultFilePath = r"..\results"
@@ -297,7 +297,7 @@ if __name__ == '__main__':
                 network.printEnvImpacts()
         
                 # save results
-                resultFileName = f"results_pareto_mrgON_EcoThierrens_real_HP_cluster{clN}_hh_{cl_hh}" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
+                resultFileName = f"results_pareto_mrgON_EcoThierrens_real2_HP_cluster{clN}_hh_{cl_hh}" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
         
                 if not os.path.exists(resultFilePath):
                     os.makedirs(resultFilePath)
@@ -344,7 +344,7 @@ if __name__ == '__main__':
             if not os.path.exists(figureFilePath):
                 os.makedirs(figureFilePath)
         
-            figureFileName = f"Pareto_EcoThierrens_real_HP_PV_PVT_ST_TES_mrgON_Cl{clN}_hh_{cl_hh}.png"
+            figureFileName = f"Pareto_EcoThierrens_real2_HP_PV_PVT_ST_TES_mrgON_Cl{clN}_hh_{cl_hh}.png"
         
             plotParetoFront(os.path.join(figureFilePath, figureFileName), costsList, envList)
         
