@@ -494,6 +494,7 @@ class EnergyNetworkClass(solph.EnergySystem):
             pv_counter = 0
             pvt_counter = 0
             st_counter = 0
+            flag = 'single'
             for key in data['solar'].loc[data['solar']['building']==i,:]['label']:                
                 if 'pv_' in key:
                     pv_counter+=1

@@ -60,7 +60,7 @@ if __name__ == '__main__':
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
     numberOfBuildings = 10
-    cluster_N = [0]
+    cluster_N = [0,36,48]
 
     con_opt = ["Con"]  # ["Con","noCon"]
     clst_opt = [True]
@@ -139,8 +139,8 @@ if __name__ == '__main__':
                              clustering_vars=clustering_vars,
                              save_file=True,
                              load_file=False,
-                             set_scenario=False,
-                             single_scenario=False,                             
+                             set_scenario=True,
+                             single_scenario=False,
                              cl_hh=False)
             # create electricity profile based on Romande Energie tarif
             # or spot profile in electricity_spot.csv
@@ -296,7 +296,7 @@ if __name__ == '__main__':
                 network.printEnvImpacts()
         
                 # save results
-                resultFileName = f"results_pareto_mrgON_IamLenz_10_Biomass_cluster{clN}_hh_{cl_hh}" + str(numberOfBuildings) + '_' + str(opt) + '_PureBiomass.xlsx'    # result filename for each optimization
+                resultFileName = f"results_pareto_mrgON_IamLenz_10_BiomassOnly_cluster{clN}_hh_{cl_hh}" + str(numberOfBuildings) + '_' + str(opt) + '_PureBiomass.xlsx'    # result filename for each optimization
         
                 if not os.path.exists(resultFilePath):
                     os.makedirs(resultFilePath)
@@ -343,7 +343,7 @@ if __name__ == '__main__':
             if not os.path.exists(figureFilePath):
                 os.makedirs(figureFilePath)
         
-            figureFileName = f"Pareto_IamLenz_10_Biomass_mrgON_Cl{clN}_hh_{cl_hh}_PureBiomass.png"
+            figureFileName = f"Pareto_IamLenz_10_BiomassONLY_mrgON_Cl{clN}_hh_{cl_hh}_PureBiomass.png"
         
             plotParetoFront(os.path.join(figureFilePath, figureFileName), costsList, envList)
         
