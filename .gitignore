@@ -13,7 +13,7 @@
 # Ignore result excel and image files
 **/[Rr]esults/
 **/[Ff]igures/
-**/examples/solar_cases*
+**/examples/solar_cases*.csv
 
 # Ignore virtual environment directory
 venv

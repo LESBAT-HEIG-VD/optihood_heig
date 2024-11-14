@@ -60,7 +60,7 @@ if __name__ == '__main__':
     if numberOfOptimizations%2==0:
         numberOfOptimizations=numberOfOptimizations+1
     numberOfBuildings = 10
-    cluster_N = [24,48]
+    cluster_N = [0]
 
     con_opt = ["Con"]  # ["Con","noCon"]
     clst_opt = [True]
@@ -86,7 +86,7 @@ if __name__ == '__main__':
             inputFilePath = curDir / ".." / "excels" / "IamLenz"
             
             # Input OF CLUSTERING STUDY: inputfileName = "scenario_IamLenz_10_075_TES_GSHP_PV_ST_PVT_mergeON.xls"
-            inputfileName="scenario_IamLenz_TES_ASHP_mrgOFF_CostsOK_indiv.xls"
+            inputfileName="scenario_IamLenz_TES_Biomass_mrgON_CostsOK.xls"
             # inputfileName = "scenario_IamLenz_2_costs_075_TES_GSHP_PV_ST_PVT-CAD.xls"
         
             resultFilePath = r"..\results"
@@ -97,7 +97,7 @@ if __name__ == '__main__':
             # set a time period for the optimization problem according to the size of clusers
             timePeriod = pd.date_range("2021-01-01 00:00:00", "2021-12-31 23:00:00", freq="60min")
             optimizationType = "costs"  # set as "env" for environmental optimization
-            mergeLinkBuses_bool = False
+            mergeLinkBuses_bool = True
             tL_bool = True  # temperature levels flag
             """ if tL_bool==False -> single dT and Tinlet for solar technologies
              and if True and stratified storage is interesting then mergeBuses
@@ -296,7 +296,7 @@ if __name__ == '__main__':
                 network.printEnvImpacts()
         
                 # save results
-                resultFileName = f"results_pareto_mrgOFF_IamLenz_10_ASHP_cluster{clN}_hh_{cl_hh}" + str(numberOfBuildings) + '_' + str(opt) + '_indMiniTES.xlsx'    # result filename for each optimization
+                resultFileName = f"results_pareto_mrgON_IamLenz_10_Biomass_cluster{clN}_hh_{cl_hh}" + str(numberOfBuildings) + '_' + str(opt) + '_PureBiomass.xlsx'    # result filename for each optimization
         
                 if not os.path.exists(resultFilePath):
                     os.makedirs(resultFilePath)
@@ -343,7 +343,7 @@ if __name__ == '__main__':
             if not os.path.exists(figureFilePath):
                 os.makedirs(figureFilePath)
         
-            figureFileName = f"Pareto_IamLenz_10_ASHP_PV_PVT_ST_075TES_mrgOFF_Cl{clN}_hh_{cl_hh}_indMiniTES.png"
+            figureFileName = f"Pareto_IamLenz_10_Biomass_mrgON_Cl{clN}_hh_{cl_hh}_PureBiomass.png"
         
             plotParetoFront(os.path.join(figureFilePath, figureFileName), costsList, envList)
         
