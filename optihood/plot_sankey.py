@@ -86,7 +86,11 @@ def createSankeyData(dataDict, keys, UseLabelDict, labelDict, PositionDict, buil
     x=[] #equivalent in dimension to nodes
     y=[] #equivalent in dimension to nodes
     linkGroup=[]
-    mergedComponents = ["electricityBus", "electricityInBus", "domesticHotWaterBus", "dhwDemandBus", "spaceHeatingBus", "shDemandBus", "excesselectricityBus", "producedElectricity", "spaceHeating", "domesticHotWater"]
+    mergedComponents = ["electricityBus", "electricityInBus", 
+                        "heatBus2", "heatDemandBus2", 
+                        "heatBus0", "heatDemandBus0", 
+                        "excesselectricityBus", "producedElectricity",
+                        "heat0", "heat2"]
 
     for key in keys:
         df = dataDict[key]
@@ -133,9 +137,9 @@ def createSankeyData(dataDict, keys, UseLabelDict, labelDict, PositionDict, buil
                             x.append(PositionDict[posKey][0])
                             if labelDict["electricityLink"] in sourceNodeName:
                                 y.append((0.5-(PositionDict[posKey][1]))/len(buildings))
-                            elif labelDict["shLink"] in sourceNodeName:
+                            elif labelDict["heatLink0"] in sourceNodeName:
                                 y.append((0.5 - (PositionDict[posKey][1])) / len(buildings))
-                            elif labelDict["dhwLink"] in sourceNodeName:
+                            elif labelDict["heatLink2"] in sourceNodeName:
                                 y.append((0.5 - (PositionDict[posKey][1])) / len(buildings))
                             elif ("grid" in sourceNodeName or "Grid" in sourceNodeName) and mergedLinks:
                                 buildingNumber = 1
@@ -160,9 +164,9 @@ def createSankeyData(dataDict, keys, UseLabelDict, labelDict, PositionDict, buil
                             x.append(PositionDict[posKey][0])
                             if labelDict["electricityLink"] in targetNodeName:
                                 y.append((0.5-(PositionDict[posKey][1]))/len(buildings))
-                            elif labelDict["shLink"] in targetNodeName:
+                            elif labelDict["heatLink0"] in targetNodeName:
                                 y.append((0.5 - (PositionDict[posKey][1])) / len(buildings))
-                            elif labelDict["dhwLink"] in targetNodeName:
+                            elif labelDict["heatLink2"] in targetNodeName:
                                 y.append((0.5 - (PositionDict[posKey][1])) / len(buildings))
                             elif ("grid" in sourceNodeName or "Grid" in sourceNodeName) and mergedLinks:
                                 buildingNumber = 1
@@ -173,6 +177,8 @@ def createSankeyData(dataDict, keys, UseLabelDict, labelDict, PositionDict, buil
                                 temp = (PositionDict[posKey][1]) / len(buildings) + (buildingNumber) / len(buildings)
                                 y.append(temp)
                 targets.append(nodes.index(targetNodeName))
+    # x[-13]=0.8
+    # y[-13]=0.3
     return nodes, sources, targets, values, x, y
 
 

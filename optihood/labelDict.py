@@ -1,10 +1,33 @@
 def labelDictGenerator(numBuildings, labels, optimType, mergedLinks):
-    base = {"electricityLink":"elLink", "shLink":"shLink", "dhwLink":"dhwLink", "naturalGasResource":"natGas", "naturalGasBus":"natGas", "qSource":"qSource", "heatSourceBus":"hSB", "gridBus":"grid", "pv":"pv", "electricityResource":"grid", "gridElectricity":"grid", "GasBoiler":"gasBoiler",
-    "CHP":"CHP", "electricityBus":"prodEl", "electricityProdBus":"localEl", "producedElectricity":"prodEl", "electricitySource":"localEl", "electricalStorage":"Bat", "excesselectricityBus":"exEl",
-    "excessshDemandBus":"exSh", "electricityInBus":"usedEl", "HP":"HP", "GWHP":"GWHP", "GWHP35":"GWHP35", "GWHP60":"GWHP60", "solarCollector":"solar", "solarConnectBus":"solar","heat_solarCollector":"solar", "excess_solarheat":"exSolar",
-    "shSource":"prodSH","shSourceBus":"prodSH", "spaceHeatingBus":"shBus", "spaceHeating":"shBus", "shStorage":"shStor", "shDemandBus":"shBus", "dhwStorageBus":"dhwStor", "dhwStorage":"dhwStor", "domesticHotWaterBus":"dhwBus",
-    "domesticHotWater":"dhwBus", "dhwDemandBus":"dhwBus", "electricityDemand":"Q_el", "emobilityDemand":"Q_mob", "spaceHeatingDemand":"Q_sh", "domesticHotWaterDemand":"Q_dhw", "excessshSourceBus":"exSh",
-    "ElectricRod":"ElectricRod"}
+    base = {"electricityLink":"elLink", "heatLink0":"shLink", "heatLink2":"dhwLink", 
+            "naturalGasResource":"natGas", "naturalGasBus":"natGas", 
+            "qSource":"qSource", "heatSourceBus":"hSB", "gridBus":"grid", 
+            "pv":"pv","pv_1":"pv","pv_2":"pv","pv_3":"pv","pv_4":"pv",
+            "electricityResource":"grid", "gridElectricity":"grid", 
+            "GasBoiler":"gasBoiler","CHP":"CHP", "electricityBus":"prodEl", 
+            "electricityProdBus":"localEl", "producedElectricity":"prodEl", 
+            "electricitySource":"localEl", "electricalStorage":"Bat", 
+            "excesselectricityBus":"exEl","excessshDemandBus":"exSh", 
+            "electricityInBus":"usedEl", "HP":"HP", "GWHP":"GWHP", 
+            "solarCollector":"solar", "solarConnectBus":"solar","heat_solarCollector":"solar", 
+            "excess_solarheat":"exSolar","thermalStorage35":"thermalStorage",
+            "thermalStorage":"thermalStorage","thermalStorage65":"thermalStorage",
+            "dummy_thermalStorage35":"thermalStorage",
+            "dummy_thermalStorage65":"thermalStorage",
+            "dummy_thermalStorage50":"thermalStorage",
+            
+            #"shSource":"prodSH","shSourceBus":"prodSH", 
+            #"heat0":"shBus", "spaceHeating":"shBus", 
+            #"heatStorageBus0":"heatStorageBus","heatStorageBus1":"heatStorageBus","heatStorageBus2":"heatStorageBus",
+            "heatStorageBus0":"thermalStorage","heatStorageBus1":"thermalStorage","heatStorageBus2":"thermalStorage",
+            "heat0":"prodSH","heatBus0":"prodSH",
+            "heat2":"prodDHW","heatBus2":"prodDHW",
+            "heatDemandBus0":"shBus","heatDemandBus2":"dhwBus",
+            
+            "electricityDemand":"Q_el", "emobilityDemand":"Q_mob",  
+            "domesticHotWaterDemand":"Q_dhw", "excessshSourceBus":"exSh",
+            "spaceHeatingDemand":"Q_sh",
+            "ElectricRod":"ElectricRod"}
     if not mergedLinks and optimType == 'group':
         base['electricityInBus'] = "usedEl"
         base['spaceHeatingBus'] = "usedSH"
@@ -84,10 +107,12 @@ def labelDictGenerator(numBuildings, labels, optimType, mergedLinks):
 
     for b in range(1,numBuildings+1):
         for key in base:
+            if "dummy" in key:
+                print("pause")
             if ("grid" in base[key] or "Grid" in base[key]) and mergedLinks:    # combine grid bus for merged links
                 value = base[key]
                 key = key + "__Building" + str(b)
-            elif mergedLinks and (all(v not in key for v in ["electricityLink", "shLink", "dhwLink", "electricityInBus", "domesticHotWater", "spaceHeatingBus", "domesticHotWaterBus", "dhwDemandBus", "spaceHeating", "shDemandBus"])
+            elif mergedLinks and (all(v not in key for v in ["electricityLink", "heatLink0", "heatLink2","thermalStorage","dummy"   ])
             or any(v in key for v in ["spaceHeatingDemand", 'domesticHotWaterDemand'])):            # append suffix for all values except links
                 value = base[key]+"_B"+str(b)
                 key = key+"__Building"+str(b)
@@ -96,7 +121,8 @@ def labelDictGenerator(numBuildings, labels, optimType, mergedLinks):
                 key = key + "__Building" + str(b)
             else:
                 value = base[key]
-                if mergedLinks and any(v in key for v in ["electricityInBus", "domesticHotWater", "spaceHeatingBus", "domesticHotWaterBus", "dhwDemandBus", "spaceHeating", "shDemandBus"]):            # append suffix for all values except links
+                exclusion_list=["electricityInBus", "domesticHotWater", "heatBus0", "heatBus2", "heatDemandBus2", "heatBus0", "heatDemandBus0","thermalStorage","thermalStorage35","thermalStorage65","heatStorageBus0","heatStorageBus1","heatStorageBus2"]
+                if mergedLinks and (any(v in key for v in exclusion_list) and any(v in key for v in key if v not in ["dummy"])):
                     key = key+"__Building"+str(b)
             labelDict[key] = value
 
@@ -104,7 +130,7 @@ def labelDictGenerator(numBuildings, labels, optimType, mergedLinks):
 
 def positionDictGenerator(labels, optimType, mergedLinks):
     labelsList = ['natGas', 'grid', 'pv', 'CHP', 'gasBoiler', 'localEl', 'prodEl', 'elLink', 'shLink', 'dhwLink', 'Bat',
-                  'usedEl', 'HP', 'GWHP', 'ElectricRod', 'solar', 'exSolar', 'prodSH', 'shStor', 'dhwStor', 'exEl',
+                  'usedEl', 'HP', 'GWHP', 'ElectricRod', 'solar', 'exSolar', 'prodSH', 'TES',  'exEl',
                   'Q_el', 'Q_mob', 'Q_sh', 'Q_dhw', 'exSh', 'dhwBus', 'shBus', 'qSource', 'hSB']
     if not mergedLinks and optimType == 'group':
         labelsList.extend(['usedEl', 'usedSH', 'prodDHW'])
@@ -143,11 +169,11 @@ def positionDictGenerator(labels, optimType, mergedLinks):
         if "qSource" in labels: labelsList[28] = labels["qSource"]
         if "ElectricRod" in labels:labelsList[14]=labels["ElectricRod"]
     positionDict = {
-        labelsList[0]: [0.001, 0.65],  # X and Y positions should never be set to 0 or 1
+        labelsList[0]: [0.001, 0.58],  # X and Y positions should never be set to 0 or 1
         labelsList[1]: [0.001, 0.15],
         labelsList[2]: [0.001, 0.3],
         labelsList[3]: [0.1, 0.7],
-        labelsList[4]: [0.1, 0.7],
+        labelsList[4]: [0.1, 0.58],
         labelsList[5]: [0.15, 0.3],
         labelsList[6]: [0.3, 0.3],
         labelsList[10]: [0.2, 0.25],
@@ -169,8 +195,8 @@ def positionDictGenerator(labels, optimType, mergedLinks):
         labelsList[21]: [0.999, 0.15],
         labelsList[22]: [0.999, 0.4],
         labelsList[23]: [0.999, 0.6],
-        labelsList[24]: [0.999, 0.85],
-        labelsList[25]: [0.999, 0.7],
+        labelsList[24]: [0.65, 0.85],
+        labelsList[25]: [0.65, 0.4],
         labelsList[26]: [0.8, 0.85],
         labelsList[27]: [0.8, 0.6]
     }
@@ -191,7 +217,7 @@ def positionDictGenerator(labels, optimType, mergedLinks):
             labelsList[30] = labels["prodDHW"]
         positionDict[labelsList[28]] = [0.52, 0.35]
         positionDict[labelsList[29]] = [0.75, 0.35]
-        positionDict[labelsList[30]] = [0.7, 0.5]
+        positionDict[labelsList[30]] = [0.7, 0.35]
 
     return positionDict
 

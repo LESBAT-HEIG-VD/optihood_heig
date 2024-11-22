@@ -86,7 +86,7 @@ if __name__ == '__main__':
             inputFilePath = curDir / ".." / "excels" / "IamLenz"
             
             # Input OF CLUSTERING STUDY: inputfileName = "scenario_IamLenz_10_075_TES_GSHP_PV_ST_PVT_mergeON.xls"
-            inputfileName="scenario_IamLenz_TES_Biomass_mrgON_CostsOK.xls"
+            inputfileName="scenario_IamLenz_TES_GSHP_Wood_mrgON_CostsOK.xls"
             # inputfileName = "scenario_IamLenz_2_costs_075_TES_GSHP_PV_ST_PVT-CAD.xls"
         
             resultFilePath = r"..\results"
@@ -139,9 +139,9 @@ if __name__ == '__main__':
                              clustering_vars=clustering_vars,
                              save_file=True,
                              load_file=False,
-                             set_scenario=True,
+                             set_scenario=False,
                              single_scenario=False,
-                             cl_hh=False)
+                             cl_hh=cl_hh)
             # create electricity profile based on Romande Energie tarif
             # or spot profile in electricity_spot.csv
             # options are : "Tarif" or "Spot"
@@ -296,7 +296,7 @@ if __name__ == '__main__':
                 network.printEnvImpacts()
         
                 # save results
-                resultFileName = f"results_pareto_mrgON_IamLenz_10_BiomassOnly_cluster{clN}_hh_{cl_hh}" + str(numberOfBuildings) + '_' + str(opt) + '_PureBiomass.xlsx'    # result filename for each optimization
+                resultFileName = f"results_pareto_mrgON_IamLenz_10_BiomassOnly_cluster{clN}_hh_{cl_hh}" + str(numberOfBuildings) + '_' + str(opt) + '.xlsx'    # result filename for each optimization
         
                 if not os.path.exists(resultFilePath):
                     os.makedirs(resultFilePath)
@@ -343,7 +343,7 @@ if __name__ == '__main__':
             if not os.path.exists(figureFilePath):
                 os.makedirs(figureFilePath)
         
-            figureFileName = f"Pareto_IamLenz_10_BiomassONLY_mrgON_Cl{clN}_hh_{cl_hh}_PureBiomass.png"
+            figureFileName = f"Pareto_IamLenz_10_BiomassONLY_mrgON_Cl{clN}_hh_{cl_hh}.png"
         
             plotParetoFront(os.path.join(figureFilePath, figureFileName), costsList, envList)
         
