@@ -53,7 +53,7 @@ class weather:
         Class constructor. Geographic info are taken from the source file
         Methods are applied at the end in sequence to create weather file for optimease
         """
-        self.f_plot=False
+        self.f_plot=True
         self.single_scenario = single_scenario
         self.get_scenario(source)
         self.tilt = 0
